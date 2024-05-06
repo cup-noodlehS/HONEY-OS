@@ -1,7 +1,3 @@
-/* eslint-disable unicorn/consistent-function-scoping */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import AppsLoader from "components/system/Apps/AppsLoader";
 import Desktop from "components/system/Desktop";
 import Taskbar from "components/system/Taskbar";
@@ -21,7 +17,7 @@ const Index = (): React.ReactElement => {
   useGlobalErrorHandler();
 
   const [message, setMessage] = useState<string>("");
-  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isOpen, setIsOpen] = useState<boolean>(true);
   const speakMessage = (): void => {
     const utterance = new SpeechSynthesisUtterance("Hello DEBMAC, I'm awake");
     utterance.pitch = 1;
@@ -58,9 +54,8 @@ const Index = (): React.ReactElement => {
 
   const handleVoiceInput = (): void => {
     const recognition = new window.webkitSpeechRecognition();
-
     recognition.lang = "en-US";
-    recognition.onresult = (event: SpeechRecognitionResult) => {
+    recognition.onresult = (event: any) => {
       const { transcript } = event.results[0][0];
       setMessage(transcript);
       recognition.stop();

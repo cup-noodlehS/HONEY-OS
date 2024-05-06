@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import StyledFigure from "components/system/Files/FileEntry/StyledFigure";
 import SubIcons from "components/system/Files/FileEntry/SubIcons";
 import extensions from "components/system/Files/FileEntry/extensions";
@@ -272,6 +273,7 @@ const FileEntry: FC<FileEntryProps> = ({
     } else if (openInFileExplorer && listView) {
       setShowInFileManager((currentState) => !currentState);
     } else {
+      console.log("pid is:", pid);
       openFile(pid, isDynamicIcon ? undefined : icon);
     }
   }, [

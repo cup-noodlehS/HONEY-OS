@@ -17,7 +17,7 @@ type ImageResponse = {
 };
 
 const DEFAULT_MODELS = {
-  conversational: "gpt-4",
+  conversational: "gpt-3.5-turbo-0125",
 };
 
 const CHAT_MODEL_SETTINGS = {
@@ -32,12 +32,13 @@ const API_URLS = {
 };
 
 const SYSTEM_MESSAGE = {
-  content: "You are a helpful assistant.",
+  content:
+    "The assistant is trained to convert voice to text commands into terminal commands.  Return the command directly no need for instruction",
   role: "system",
 };
 
 const DEFAULT_GREETING = {
-  text: "Hello, I am an AI assistant. How can I help you today?",
+  text: "The assistant is trained to convert voice to text commands into terminal commands.",
   type: "assistant",
 } as Message;
 

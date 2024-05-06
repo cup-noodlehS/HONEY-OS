@@ -59,6 +59,8 @@ export type ProcessElements = {
 export type Process = ProcessArguments &
   ProcessElements & {
     Component: React.ComponentType<ComponentProcessProps>;
+    arrivalTime?: number;
+    burstTime?: number;
     closing?: boolean;
     defaultSize?: Size;
     hasWindow?: boolean;

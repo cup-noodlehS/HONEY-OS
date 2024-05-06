@@ -126,21 +126,24 @@ const directory: Processes = {
   },
   Marked: {
     Component: dynamic(() => import("components/apps/Marked")),
+
     backgroundColor: "#FFF",
+    burstTime: 10,
     defaultSize: {
       height: 480,
-      width: 560,
+      width: 600,
     },
     icon: "/System/Icons/marked.webp",
     libs: [
       "/Program Files/Marked/marked.min.js",
       "/Program Files/Marked/purify.min.js",
     ],
-    title: "Marked",
+    title: "Task Manager",
   },
   Messenger: {
     Component: dynamic(() => import("components/apps/Messenger")),
     backgroundColor: "#242526",
+    burstTime: 20,
     defaultSize: {
       height: 500,
       width: 425,

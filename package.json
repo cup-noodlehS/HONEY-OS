@@ -29,17 +29,11 @@
     "e2e:ui": "playwright test --ui",
     "eslint": "eslint .",
     "export": "next export",
-    "prepare": "husky install",
     "prettier": "prettier --write .",
     "start": "next start",
     "stylelint": "stylelint --formatter=verbose **/*.ts*",
     "test": "jest",
     "unused-exports": "ts-prune --project tsconfig.json --ignore \"\\pages|\\e2e\" --error"
-  },
-  "lint-staged": {
-    "*": "prettier --ignore-unknown --write",
-    "*.{ts,tsx}": "stylelint --fix",
-    "*.{js,ts,tsx}": "eslint --fix"
   },
   "dependencies": {
     "@mlc-ai/web-llm": "^0.2.8",
@@ -123,10 +117,8 @@
     "eslint-plugin-unused-imports": "^3.0.0",
     "html-minifier-terser": "^7.2.0",
     "html-to-image": "^1.11.11",
-    "husky": "^8.0.3",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
-    "lint-staged": "^15.0.2",
     "lunr": "^2.3.9",
     "monaco-editor": "^0.44.0",
     "pdfjs-dist": "^3.11.174",
