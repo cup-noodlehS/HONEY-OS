@@ -18,6 +18,7 @@ import type { FocusEntryFunctions } from "components/system/Files/FileManager/us
 import type { FileActions } from "components/system/Files/FileManager/useFolder";
 import type { FileManagerViewNames } from "components/system/Files/Views";
 import { FileEntryIconSize } from "components/system/Files/Views";
+import { useVoiceCommand } from "contexts/VoiceCommandContext";
 import { useFileSystem } from "contexts/fileSystem";
 import { useProcesses } from "contexts/process";
 import { m as motion } from "framer-motion";
@@ -178,6 +179,7 @@ const FileEntry: FC<FileEntryProps> = ({
     () => extension === SHORTCUT_EXTENSION,
     [extension]
   );
+
   const directory = isShortcut ? url : path;
   const fileDrop = useFileDrop({
     callback: async (fileDropName, data) => {
@@ -230,7 +232,6 @@ const FileEntry: FC<FileEntryProps> = ({
       }
       return "";
     }
-
     const type =
       extensions[extension]?.type ||
       `${extension.toUpperCase().replace(".", "")} File`;
@@ -260,6 +261,24 @@ const FileEntry: FC<FileEntryProps> = ({
     stats,
     url,
   ]);
+  const { message, setMessage } = useVoiceCommand();
+  const speakMessage = (m: string): void => {
+    const utterance = new SpeechSynthesisUtterance(m);
+    utterance.pitch = 1;
+    utterance.rate = 0.5;
+    utterance.volume = 1;
+    const voices = window.speechSynthesis.getVoices();
+    window.speechSynthesis.speak(utterance);
+  };
+
+  useEffect(() => {
+    console.log("message is:", message);
+    if (message === "open file manager") {
+      speakMessage("Opening File Manager");
+      openFile("Marked", "/System/Icons/marked.webp");
+      setMessage("");
+    }
+  }, [message]);
   const [tooltip, setTooltip] = useState<string>();
   const doubleClickHandler = useCallback(() => {
     if (

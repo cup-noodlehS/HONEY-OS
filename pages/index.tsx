@@ -1,13 +1,15 @@
 import AppsLoader from "components/system/Apps/AppsLoader";
 import Desktop from "components/system/Desktop";
 import Taskbar from "components/system/Taskbar";
+import { useVoiceCommand } from "contexts/VoiceCommandContext";
 import useGlobalErrorHandler from "hooks/useGlobalErrorHandler";
 import useGlobalKeyboardShortcuts from "hooks/useGlobalKeyboardShortcuts";
 import useIFrameFocuser from "hooks/useIFrameFocuser";
 import useUrlLoader from "hooks/useUrlLoader";
 import { memo, useEffect, useState } from "react";
-import { toast, ToastContainer } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import styled from "styled-components";
 import Preloader from "./Preloader";
 
 const Index = (): React.ReactElement => {
@@ -15,80 +17,44 @@ const Index = (): React.ReactElement => {
   useUrlLoader();
   useGlobalKeyboardShortcuts();
   useGlobalErrorHandler();
-
-  const [message, setMessage] = useState<string>("");
-  const [isOpen, setIsOpen] = useState<boolean>(true);
-  const speakMessage = (): void => {
-    const utterance = new SpeechSynthesisUtterance("Hello DEBMAC, I'm awake");
+  const [showGif, setShowGif] = useState<boolean>(false);
+  const { message } = useVoiceCommand();
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const speakMessage = (m: string): void => {
+    const utterance = new SpeechSynthesisUtterance(m);
     utterance.pitch = 1;
     utterance.rate = 0.5;
     utterance.volume = 1;
-    // Function to select the Microsoft Zira voice
-    const selectZiraVoice = (voices: SpeechSynthesisVoice[]) => {
-      const ziraVoice = voices.find(
-        (voice) => voice.name === "Microsoft Zira - English (United States)"
-      );
-
-      if (ziraVoice) {
-        utterance.voice = ziraVoice;
-        window.speechSynthesis.speak(utterance);
-      } else {
-        console.error("Microsoft Zira voice not found!");
-      }
-    };
-
-    // Check if the voices are available
     const voices = window.speechSynthesis.getVoices();
-
-    if (voices.length > 0) {
-      // Voices are available, select Zira voice
-      selectZiraVoice(voices);
-    } else {
-      // Voices not available, listen for voiceschanged event
-      window.speechSynthesis.onvoiceschanged = () => {
-        const updatedVoices = window.speechSynthesis.getVoices();
-        selectZiraVoice(updatedVoices);
-      };
-    }
+    window.speechSynthesis.speak(utterance);
   };
 
-  const handleVoiceInput = (): void => {
-    const recognition = new window.webkitSpeechRecognition();
-    recognition.lang = "en-US";
-    recognition.onresult = (event: any) => {
-      const { transcript } = event.results[0][0];
-      setMessage(transcript);
-      recognition.stop();
-
-      // Speak the response if message is "honey wake up"
-      if (transcript === "honey wake up") {
-        speakMessage();
-        setIsOpen(true);
-      }
-    };
-    recognition.start();
-  };
+  const StyledContainer = styled.div`
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  `;
 
   useEffect(() => {
     if (message !== "") {
       toast(message);
+      if (message === "honey wake up") {
+        speakMessage("Hello DEBMAC, I'm awake");
+        setShowGif(true);
+        setTimeout(() => {
+          setIsOpen(true);
+        }, 1000);
+      } else if (message === "honey rest") {
+        speakMessage("Resting");
+        setIsOpen(false);
+        setShowGif(false);
+      }
     }
   }, [message]);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.ctrlKey && event.code === "Space") {
-        event.preventDefault();
-        handleVoiceInput();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
 
   return (
     <div>
@@ -99,7 +65,10 @@ const Index = (): React.ReactElement => {
           <AppsLoader />
         </Desktop>
       ) : (
-        <Preloader />
+        <StyledContainer>
+          {!showGif && <img alt="Loading..." src="/closed.png" />}
+          <Preloader showGif={showGif} />
+        </StyledContainer>
       )}
     </div>
   );

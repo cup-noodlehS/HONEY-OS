@@ -1,5 +1,5 @@
 const colors = {
-  background: "#000",
+  background: "#E79A3F",
   fileEntry: {
     background: "hsla(207, 30%, 72%, 25%)",
     backgroundFocused: "hsla(207, 60%, 72%, 35%)",
