@@ -273,8 +273,8 @@ const FileEntry: FC<FileEntryProps> = ({
 
   useEffect(() => {
     console.log("message is:", message);
-    if (message === "open file manager") {
-      speakMessage("Opening File Manager");
+    if (message === "open task manager") {
+      speakMessage("Opening task Manager");
       openFile("Marked", "/System/Icons/marked.webp");
       setMessage("");
     }
