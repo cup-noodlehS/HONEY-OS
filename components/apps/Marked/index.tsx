@@ -88,8 +88,6 @@ const Header = styled.span`
   color: #cdd6f4;
   padding: 0.75rem;
   font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 `;
 
 const ProcessID = styled.span`
@@ -224,6 +222,124 @@ const MemoryUsageFill = styled.div<{ percentage: number }>`
   transition: width 0.3s ease;
 `;
 
+const GanttChartContainer = styled.div`
+  margin-top: 2rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  background-color: #313244;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+`;
+
+const GanttChartHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+`;
+
+const GanttLegend = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #45475a;
+`;
+
+const GanttLegendItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+`;
+
+const GanttLegendColor = styled.div<{ color: string }>`
+  width: 1rem;
+  height: 1rem;
+  background-color: ${({ color }) => color};
+  border-radius: 2px;
+`;
+
+const GanttTimeline = styled.div`
+  position: relative;
+  height: 3rem;
+  width: 100%;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  overflow-x: auto;
+
+  &::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #1e1e2e;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: #45475a;
+    border-radius: 4px;
+  }
+`;
+
+const GanttBar = styled.div<{
+  color: string;
+  duration: number;
+  widthPercentage: number;
+}>`
+  height: 100%;
+  background-color: ${({ color }) => color};
+  width: ${({ widthPercentage, duration }) => `${widthPercentage * duration}%`};
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 500;
+  font-size: 0.8rem;
+  margin-right: 1px;
+  position: relative;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: transform 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    z-index: 10;
+  }
+
+  &::after {
+    content: attr(data-time);
+    position: absolute;
+    bottom: 0;
+    right: 2px;
+    font-size: 0.65rem;
+    opacity: 0.8;
+  }
+`;
+
+const GanttTimeLabels = styled.div`
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 0.25rem;
+  color: #cdd6f4;
+  font-size: 0.7rem;
+`;
+
+interface GanttItem {
+  color: string;
+  endTime: number;
+  processId: string;
+  startTime: number;
+}
+
 const Marked: FC = () => {
   const { processes = {} } = useProcesses();
   const openFile = useFile(``);
@@ -238,6 +354,8 @@ const Marked: FC = () => {
   const [memoryUsage, setMemoryUsage] = useState(0);
   const [readyQueue, setReadyQueue] = useState<SimulationProcess[]>([]);
   const [jobQueue, setJobQueue] = useState<SimulationProcess[]>([]);
+  const [executionHistory, setExecutionHistory] = useState<GanttItem[]>([]);
+
   const handleAddProcess = (process: SimulationProcess) => {
     setSimulationProcesses((prevProcesses) => [...prevProcesses, process]);
   };
@@ -353,6 +471,7 @@ const Marked: FC = () => {
     setSimulationProcesses([]);
     setCurrentTime(0);
     setMemoryUsage(0);
+    setExecutionHistory([]);
   };
 
   const simulateFCFS = () => {
@@ -362,6 +481,7 @@ const Marked: FC = () => {
     let time = 0;
     const scheduledProcesses = [];
     const processQueue = [];
+    const executionTimelineItems: GanttItem[] = [];
 
     const interval = setInterval(() => {
       // Update the readyQueue based on the current process statuses
@@ -418,6 +538,15 @@ const Marked: FC = () => {
 
         if (processIndex !== -1) {
           simulationProcesses[processIndex].burstTime -= 1;
+
+          // Add to execution timeline
+          executionTimelineItems.push({
+            color: simulationProcesses[processIndex].color,
+            endTime: time + 1,
+            processId: simulationProcesses[processIndex].processId,
+            startTime: time,
+          });
+
           scheduledProcesses.push({
             ...simulationProcesses[processIndex],
             endTime: time + 1,
@@ -456,6 +585,14 @@ const Marked: FC = () => {
         }
         time += 1;
       } else {
+        // Idle process
+        executionTimelineItems.push({
+          color: "#45475a",
+          endTime: time + 1,
+          processId: "Idle",
+          startTime: time,
+        });
+
         scheduledProcesses.push({
           arrivalTime: time,
           burstTime: 1,
@@ -484,11 +621,13 @@ const Marked: FC = () => {
         clearInterval(interval);
         setIsSimulating(false);
       }
+      setExecutionHistory(executionTimelineItems);
       setSimulationProcesses([...simulationProcesses]);
       setTotalTime(time);
     }, 1000);
 
     setIsSimulating(true);
+    setExecutionHistory([]);
   };
 
   const simulateSJF = () => {
@@ -499,6 +638,7 @@ const Marked: FC = () => {
     const scheduledProcesses = [];
     const processQueue = [];
     const remainingBurstTimes = {};
+    const executionTimelineItems: GanttItem[] = [];
 
     sortedProcesses.forEach((process) => {
       remainingBurstTimes[process.processId] = process.burstTime;
@@ -563,6 +703,15 @@ const Marked: FC = () => {
 
         if (processIndex !== -1) {
           simulationProcesses[processIndex].burstTime -= 1;
+
+          // Add to execution timeline
+          executionTimelineItems.push({
+            color: simulationProcesses[processIndex].color,
+            endTime: time + 1,
+            processId: simulationProcesses[processIndex].processId,
+            startTime: time,
+          });
+
           scheduledProcesses.push({
             ...simulationProcesses[processIndex],
             endTime: time + 1,
@@ -643,6 +792,7 @@ const Marked: FC = () => {
     let time = 0;
     const scheduledProcesses = [];
     const processQueue = [];
+    const executionTimelineItems: GanttItem[] = [];
 
     const interval = setInterval(() => {
       // Update the readyQueue based on the current process statuses
@@ -738,6 +888,14 @@ const Marked: FC = () => {
         }
         time += 1;
       } else {
+        // Idle process
+        executionTimelineItems.push({
+          color: "#45475a",
+          endTime: time + 1,
+          processId: "Idle",
+          startTime: time,
+        });
+
         scheduledProcesses.push({
           arrivalTime: time,
           burstTime: 1,
@@ -766,11 +924,13 @@ const Marked: FC = () => {
         clearInterval(interval);
         setIsSimulating(false);
       }
+      setExecutionHistory(executionTimelineItems);
       setSimulationProcesses([...simulationProcesses]);
       setTotalTime(time);
     }, 1000);
 
     setIsSimulating(true);
+    setExecutionHistory([]);
   };
 
   const simulateRoundRobin = (quantum = 4) => {
@@ -781,6 +941,7 @@ const Marked: FC = () => {
     const scheduledProcesses = [];
     const processQueue = [];
     const remainingBurstTimes = {};
+    const executionTimelineItems: GanttItem[] = [];
 
     sortedProcesses.forEach((process) => {
       remainingBurstTimes[process.processId] = process.burstTime;
@@ -840,6 +1001,14 @@ const Marked: FC = () => {
         );
 
         if (processIndex === -1) {
+          // Idle process
+          executionTimelineItems.push({
+            color: "#45475a",
+            endTime: time + 1,
+            processId: "Idle",
+            startTime: time,
+          });
+
           scheduledProcesses.push({
             arrivalTime: time,
             burstTime: 1,
@@ -860,6 +1029,15 @@ const Marked: FC = () => {
           );
 
           simulationProcesses[processIndex].burstTime -= executionTime;
+
+          // Add to execution timeline
+          executionTimelineItems.push({
+            color: simulationProcesses[processIndex].color,
+            endTime: time + executionTime,
+            processId: simulationProcesses[processIndex].processId,
+            startTime: time,
+          });
+
           scheduledProcesses.push({
             ...simulationProcesses[processIndex],
             burstTime: executionTime,
@@ -910,12 +1088,14 @@ const Marked: FC = () => {
           clearInterval(interval);
           setIsSimulating(false);
         }
+        setExecutionHistory(executionTimelineItems);
         setSimulationProcesses([...simulationProcesses]);
         setTotalTime(time);
       }
     }, 1000);
 
     setIsSimulating(true);
+    setExecutionHistory([]);
   };
 
   useEffect(() => {
@@ -935,6 +1115,9 @@ const Marked: FC = () => {
   // Calculate memory usage percentage for the progress bar
   const memoryUsagePercentage =
     readyQueue.reduce((acc, process) => acc + process.memorySize, 0) / 10.24;
+
+  // Calculate time scale for Gantt chart
+  const timeScale = totalTime > 0 ? 100 / totalTime : 0;
 
   return (
     <StyledMarked>
@@ -1008,6 +1191,57 @@ const Marked: FC = () => {
           );
         })}
       </ProcessContainer>
+
+      {executionHistory.length > 0 && (
+        <GanttChartContainer>
+          <GanttChartHeader>
+            <QueueHeader style={{ margin: 0 }}>
+              Process Execution Timeline
+            </QueueHeader>
+            <span>{`Current Time: ${currentTime}`}</span>
+          </GanttChartHeader>
+
+          <GanttTimeline>
+            {executionHistory.map((item, index) => (
+              <GanttBar
+                key={`${item.processId}-${item.startTime}`}
+                color={item.color}
+                data-time={item.startTime}
+                duration={item.endTime - item.startTime}
+                title={`${item.processId} (Time: ${item.startTime}-${item.endTime})`}
+                widthPercentage={timeScale}
+              >
+                {item.processId}
+              </GanttBar>
+            ))}
+          </GanttTimeline>
+
+          <GanttTimeLabels>
+            <span>Time: 0</span>
+            <span>Time: {totalTime}</span>
+          </GanttTimeLabels>
+
+          <GanttLegend>
+            {/* Create a unique list of processes for the legend */}
+            {[
+              ...new Map(
+                executionHistory
+                  .filter((item) => item.processId !== "Idle")
+                  .map((item) => [item.processId, item])
+              ).values(),
+            ].map((item) => (
+              <GanttLegendItem key={item.processId}>
+                <GanttLegendColor color={item.color} />
+                <span>{item.processId}</span>
+              </GanttLegendItem>
+            ))}
+            <GanttLegendItem>
+              <GanttLegendColor color="#45475a" />
+              <span>Idle</span>
+            </GanttLegendItem>
+          </GanttLegend>
+        </GanttChartContainer>
+      )}
 
       <MainMemoryContainer>
         <QueueHeader>
