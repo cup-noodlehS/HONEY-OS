@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PCB Simulation</title>
+    <style>
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        border: 1px solid black;
+        padding: 8px;
+        text-align: center;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      .scroll-pane {
+        max-height: 300px;
+        overflow-y: scroll;
+      }
+      .menu {
+        margin-bottom: 20px;
+      }
+      .menu button {
+        margin-right: 10px;
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="menu">
+      <button onclick="selectPolicy('FCFS')">FCFS</button>
+      <button onclick="selectPolicy('SJF')">SJF (Preemptive)</button>
+      <button onclick="selectPolicy('Priority')">Priority</button>
+      <button onclick="selectPolicy('Round Robin')">Round Robin</button>
+    </div>
+
+    <div class="scroll-pane">
+      <table id="pcbTable">
+        <thead>
+          <tr>
+            <th>Process ID</th>
+            <th>Burst Time</th>
+            <th>Memory Size</th>
+            <th>Arrival Time</th>
+            <th>Priority</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Rows will be dynamically added here -->
+        </tbody>
+      </table>
+    </div>
+
+    <script>
+      function selectPolicy(policy) {
+        // Clear the table
+        document.querySelector("#pcbTable tbody").innerHTML = "";
+        // Set up PCB based on selected policy (simulation logic goes here)
+        simulateProcesses(policy);
+      }
+
+      function simulateProcesses(policy) {
+        // For demonstration purposes, we'll just add a few example rows
+        const exampleProcesses = [
+          {
+            id: 1,
+            burst: 5,
+            memory: 100,
+            arrival: 1,
+            priority: 3,
+            status: "Ready",
+          },
+          {
+            id: 2,
+            burst: 3,
+            memory: 150,
+            arrival: 2,
+            priority: 2,
+            status: "Running",
+          },
+          {
+            id: 3,
+            burst: 4,
+            memory: 120,
+            arrival: 3,
+            priority: 1,
+            status: "Waiting",
+          },
+        ];
+
+        const tbody = document.querySelector("#pcbTable tbody");
+        exampleProcesses.forEach((process) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+                <td>${process.id}</td>
+                <td>${process.burst}</td>
+                <td>${process.memory}</td>
+                <td>${process.arrival}</td>
+                <td>${policy === "Priority" ? process.priority : "-"}</td>
+                <td>${process.status}</td>
+            `;
+          tbody.appendChild(row);
+        });
+      }
+
+      // Initialize with FCFS policy
+      selectPolicy("FCFS");
+    </script>
+  </body>
+</html>
