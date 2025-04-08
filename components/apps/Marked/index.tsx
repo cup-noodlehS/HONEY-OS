@@ -32,8 +32,16 @@ const StyledSelector = styled.div`
 
 const DesTime = styled.div`
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
   margin: 1rem 0 2rem;
+`;
+
+const TimeLabel = styled.div`
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #cdd6f4;
+  margin-bottom: 0.75rem;
 `;
 
 const DesDiv = styled.div`
@@ -149,6 +157,22 @@ const QueueHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+`;
+
+const AlgorithmContainer = styled.div`
+  margin-top: 1rem;
+  padding: 1.5rem;
+  background-color: #313244;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+`;
+
+const AlgorithmTitle = styled.div`
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #cdd6f4;
+  margin-bottom: 1.25rem;
+  text-align: center;
 `;
 
 const MainMemoryContainer = styled.div`
@@ -785,6 +809,168 @@ const Marked: FC = () => {
     setIsSimulating(true);
   };
 
+  const simulateSRTF = () => {
+    const sortedProcesses = [...simulationProcesses].sort(
+      (a, b) => a.arrivalTime - b.arrivalTime
+    );
+    let time = 0;
+    const scheduledProcesses = [];
+    const processQueue = [];
+    const remainingBurstTimes = {};
+    const executionTimelineItems: GanttItem[] = [];
+
+    // Initialize remaining burst times
+    simulationProcesses.forEach((process) => {
+      remainingBurstTimes[process.processId] = process.burstTime;
+    });
+
+    const interval = setInterval(() => {
+      // Update the readyQueue based on the current process statuses
+      const currentReadyQueue = simulationProcesses.filter(
+        (process) =>
+          process.status === "Ready" || process.status === "Processing"
+      );
+
+      // Calculate current memory usage directly from the readyQueue state
+      const currentMemoryUsage = currentReadyQueue.reduce(
+        (acc, process) => acc + process.memorySize,
+        0
+      );
+
+      // Check for processes that have arrived at the current time
+      simulationProcesses.forEach((process) => {
+        if (process.status === "Not Ready" && process.arrivalTime === time) {
+          process.status =
+            currentMemoryUsage + process.memorySize > 1024 ||
+            jobQueue.length > 0
+              ? "Waiting for Memory"
+              : "Ready";
+
+          if (process.status === "Waiting for Memory") {
+            setJobQueue((prevJobQueue) => {
+              if (
+                !prevJobQueue.some((p) => p.processId === process.processId)
+              ) {
+                return [...prevJobQueue, process];
+              }
+              return prevJobQueue;
+            });
+          } else if (process.status === "Ready") {
+            // If the process can be added to ready queue, add it to process queue too
+            processQueue.push(process);
+          }
+        }
+      });
+
+      // Add processes that have arrived to the process queue
+      while (
+        sortedProcesses.length > 0 &&
+        sortedProcesses[0].arrivalTime <= time
+      ) {
+        const newProcess = sortedProcesses.shift();
+        if (newProcess.status !== "Waiting for Memory") {
+          processQueue.push(newProcess);
+        }
+      }
+
+      if (processQueue.length > 0) {
+        // Sort processes by remaining time (preemptive)
+        processQueue.sort((a, b) => {
+          const aRemaining = remainingBurstTimes[a.processId] || a.burstTime;
+          const bRemaining = remainingBurstTimes[b.processId] || b.burstTime;
+          return aRemaining - bRemaining;
+        });
+
+        const currentProcess = processQueue[0];
+        const processIndex = simulationProcesses.findIndex(
+          (p) => p.processId === currentProcess.processId
+        );
+
+        if (processIndex !== -1) {
+          // Execute for one time unit
+          simulationProcesses[processIndex].burstTime -= 1;
+          remainingBurstTimes[currentProcess.processId] -= 1;
+
+          // Add to execution timeline
+          executionTimelineItems.push({
+            color: simulationProcesses[processIndex].color,
+            endTime: time + 1,
+            processId: simulationProcesses[processIndex].processId,
+            startTime: time,
+          });
+
+          // Update process status
+          simulationProcesses.forEach((process, index) => {
+            if (index !== processIndex && process.status === "Processing") {
+              process.status = "Ready";
+            }
+          });
+          simulationProcesses[processIndex].status = "Processing";
+
+          // Check if process is completed
+          if (remainingBurstTimes[currentProcess.processId] === 0) {
+            // Remove from process queue
+            processQueue.splice(
+              processQueue.findIndex(
+                (p) => p.processId === currentProcess.processId
+              ),
+              1
+            );
+            simulationProcesses[processIndex].status = "Completed";
+
+            // Try to add the first process from the jobQueue to the readyQueue if there is enough memory
+            setJobQueue((prevJobQueue) => {
+              if (prevJobQueue.length > 0) {
+                const firstJob = prevJobQueue[0];
+                const newMemoryUsage = currentMemoryUsage + firstJob.memorySize;
+                if (newMemoryUsage <= 1024) {
+                  firstJob.status = "Ready";
+                  processQueue.push(firstJob);
+                  setReadyQueue((prevReadyQueue) => [
+                    ...prevReadyQueue,
+                    firstJob,
+                  ]);
+                  return prevJobQueue.slice(1);
+                }
+              }
+              return prevJobQueue;
+            });
+          }
+        }
+      } else {
+        // Idle process
+        executionTimelineItems.push({
+          color: "#45475a",
+          endTime: time + 1,
+          processId: "Idle",
+          startTime: time,
+        });
+      }
+
+      time += 1;
+
+      // Update the state of readyQueue
+      setReadyQueue(
+        currentReadyQueue.filter((process) => process.status !== "Completed")
+      );
+      setJobQueue((prevJobQueue) =>
+        prevJobQueue.filter((process) => process.status !== "Completed")
+      );
+
+      setCurrentTime(time);
+      if (sortedProcesses.length === 0 && processQueue.length === 0) {
+        clearInterval(interval);
+        setIsSimulating(false);
+      }
+      setExecutionHistory(executionTimelineItems);
+      setSimulationProcesses([...simulationProcesses]);
+      setTotalTime(time);
+    }, 1000);
+
+    setIsSimulating(true);
+    setExecutionHistory([]);
+  };
+
   const simulatePriority = () => {
     const sortedProcesses = [...simulationProcesses].sort(
       (a, b) => a.arrivalTime - b.arrivalTime
@@ -1098,6 +1284,648 @@ const Marked: FC = () => {
     setExecutionHistory([]);
   };
 
+  const simulateMultiLevelQueue = () => {
+    const sortedProcesses = [...simulationProcesses].sort(
+      (a, b) => a.arrivalTime - b.arrivalTime
+    );
+    let time = 0;
+
+    // Define multiple queues with different priorities
+    // Queue 0: Highest priority (priority 1-3) - Round Robin with quantum 2
+    // Queue 1: Medium priority (priority 4-7) - Round Robin with quantum 4
+    // Queue 2: Low priority (priority 8-10) - FCFS
+    const queues = [[], [], []];
+    const remainingBurstTimes = {};
+    const executionTimelineItems: GanttItem[] = [];
+
+    // Initialize remaining burst times
+    simulationProcesses.forEach((process) => {
+      remainingBurstTimes[process.processId] = process.burstTime;
+    });
+
+    const getQueueForPriority = (priority: number) => {
+      if (priority >= 1 && priority <= 3) return 0;
+      if (priority >= 4 && priority <= 7) return 1;
+      return 2;
+    };
+
+    const interval = setInterval(() => {
+      // Update the readyQueue based on the current process statuses
+      const currentReadyQueue = simulationProcesses.filter(
+        (process) =>
+          process.status === "Ready" || process.status === "Processing"
+      );
+
+      // Calculate current memory usage directly from the readyQueue state
+      const currentMemoryUsage = currentReadyQueue.reduce(
+        (acc, process) => acc + process.memorySize,
+        0
+      );
+
+      // Check for processes that have arrived at the current time
+      simulationProcesses.forEach((process) => {
+        if (process.status === "Not Ready" && process.arrivalTime === time) {
+          process.status =
+            currentMemoryUsage + process.memorySize > 1024 ||
+            jobQueue.length > 0
+              ? "Waiting for Memory"
+              : "Ready";
+
+          if (process.status === "Waiting for Memory") {
+            setJobQueue((prevJobQueue) => {
+              if (
+                !prevJobQueue.some((p) => p.processId === process.processId)
+              ) {
+                return [...prevJobQueue, process];
+              }
+              return prevJobQueue;
+            });
+          } else if (process.status === "Ready") {
+            // Add to appropriate queue based on priority
+            const queueIndex = getQueueForPriority(process.priority);
+            queues[queueIndex].push(process);
+          }
+        }
+      });
+
+      // Add newly arrived processes to appropriate queues
+      while (
+        sortedProcesses.length > 0 &&
+        sortedProcesses[0].arrivalTime <= time
+      ) {
+        const newProcess = sortedProcesses.shift();
+        if (newProcess.status !== "Waiting for Memory") {
+          const queueIndex = getQueueForPriority(newProcess.priority);
+          queues[queueIndex].push(newProcess);
+        }
+      }
+
+      // Process the highest priority queue first
+      let executed = false;
+      for (let queueIndex = 0; queueIndex < queues.length; queueIndex++) {
+        if (queues[queueIndex].length > 0) {
+          let currentProcess;
+
+          switch (queueIndex) {
+            case 0: // Highest priority - Round Robin with quantum 2
+            case 1: // Medium priority - Round Robin with quantum 4
+              currentProcess = queues[queueIndex].shift();
+              const quantum = queueIndex === 0 ? 2 : 4;
+              const executionTime = Math.min(
+                quantum,
+                remainingBurstTimes[currentProcess.processId]
+              );
+
+              const processIndex = simulationProcesses.findIndex(
+                (p) => p.processId === currentProcess.processId
+              );
+
+              if (processIndex !== -1) {
+                simulationProcesses[processIndex].burstTime -= executionTime;
+                remainingBurstTimes[currentProcess.processId] -= executionTime;
+
+                // Update status
+                simulationProcesses.forEach((process, index) => {
+                  if (
+                    index !== processIndex &&
+                    process.status === "Processing"
+                  ) {
+                    process.status = "Ready";
+                  }
+                });
+                simulationProcesses[processIndex].status = "Processing";
+
+                // Add to execution timeline
+                executionTimelineItems.push({
+                  color: simulationProcesses[processIndex].color,
+                  endTime: time + executionTime,
+                  processId: simulationProcesses[processIndex].processId,
+                  startTime: time,
+                });
+
+                // Check if process is completed
+                if (remainingBurstTimes[currentProcess.processId] === 0) {
+                  simulationProcesses[processIndex].status = "Completed";
+
+                  // Try to add the first process from the jobQueue
+                  setJobQueue((prevJobQueue) => {
+                    if (prevJobQueue.length > 0) {
+                      const firstJob = prevJobQueue[0];
+                      const newMemoryUsage =
+                        currentMemoryUsage + firstJob.memorySize;
+                      if (newMemoryUsage <= 1024) {
+                        firstJob.status = "Ready";
+                        const jobQueueIndex = getQueueForPriority(
+                          firstJob.priority
+                        );
+                        queues[jobQueueIndex].push(firstJob);
+                        setReadyQueue((prevReadyQueue) => [
+                          ...prevReadyQueue,
+                          firstJob,
+                        ]);
+                        return prevJobQueue.slice(1);
+                      }
+                    }
+                    return prevJobQueue;
+                  });
+                } else {
+                  // If not completed, add back to queue
+                  queues[queueIndex].push(currentProcess);
+                }
+
+                time += executionTime;
+                executed = true;
+              }
+              break;
+
+            case 2: // Lowest priority - FCFS
+              currentProcess = queues[queueIndex][0]; // Peek but don't remove yet
+              const processIdx = simulationProcesses.findIndex(
+                (p) => p.processId === currentProcess.processId
+              );
+
+              if (processIdx !== -1) {
+                simulationProcesses[processIdx].burstTime -= 1;
+                remainingBurstTimes[currentProcess.processId] -= 1;
+
+                // Update status
+                simulationProcesses.forEach((process, index) => {
+                  if (index !== processIdx && process.status === "Processing") {
+                    process.status = "Ready";
+                  }
+                });
+                simulationProcesses[processIdx].status = "Processing";
+
+                // Add to execution timeline
+                executionTimelineItems.push({
+                  color: simulationProcesses[processIdx].color,
+                  endTime: time + 1,
+                  processId: simulationProcesses[processIdx].processId,
+                  startTime: time,
+                });
+
+                // Check if process is completed
+                if (remainingBurstTimes[currentProcess.processId] === 0) {
+                  queues[queueIndex].shift(); // Now remove it
+                  simulationProcesses[processIdx].status = "Completed";
+
+                  // Try to add the first process from the jobQueue
+                  setJobQueue((prevJobQueue) => {
+                    if (prevJobQueue.length > 0) {
+                      const firstJob = prevJobQueue[0];
+                      const newMemoryUsage =
+                        currentMemoryUsage + firstJob.memorySize;
+                      if (newMemoryUsage <= 1024) {
+                        firstJob.status = "Ready";
+                        const jobQueueIndex = getQueueForPriority(
+                          firstJob.priority
+                        );
+                        queues[jobQueueIndex].push(firstJob);
+                        setReadyQueue((prevReadyQueue) => [
+                          ...prevReadyQueue,
+                          firstJob,
+                        ]);
+                        return prevJobQueue.slice(1);
+                      }
+                    }
+                    return prevJobQueue;
+                  });
+                }
+
+                time += 1;
+                executed = true;
+              }
+              break;
+          }
+
+          break; // Process only one queue per time unit (higher priority queues are serviced first)
+        }
+      }
+
+      if (!executed) {
+        // Idle process - no process to execute
+        executionTimelineItems.push({
+          color: "#45475a",
+          endTime: time + 1,
+          processId: "Idle",
+          startTime: time,
+        });
+        time += 1;
+      }
+
+      // Update the state of readyQueue
+      setReadyQueue(
+        currentReadyQueue.filter((process) => process.status !== "Completed")
+      );
+      setJobQueue((prevJobQueue) =>
+        prevJobQueue.filter((process) => process.status !== "Completed")
+      );
+
+      setCurrentTime(time);
+
+      // Check if all processes are completed
+      const allQueuesEmpty = queues.every((queue) => queue.length === 0);
+      if (sortedProcesses.length === 0 && allQueuesEmpty) {
+        clearInterval(interval);
+        setIsSimulating(false);
+      }
+
+      setExecutionHistory(executionTimelineItems);
+      setSimulationProcesses([...simulationProcesses]);
+      setTotalTime(time);
+    }, 1000);
+
+    setIsSimulating(true);
+    setExecutionHistory([]);
+  };
+
+  const simulateMultiLevelFeedbackQueue = () => {
+    const sortedProcesses = [...simulationProcesses].sort(
+      (a, b) => a.arrivalTime - b.arrivalTime
+    );
+    let time = 0;
+
+    // Define multiple queues with different time quantums
+    // Queue 0: Highest priority - Round Robin with quantum 2
+    // Queue 1: Medium priority - Round Robin with quantum 4
+    // Queue 2: Lowest priority - FCFS
+    const queues = [[], [], []];
+    const remainingBurstTimes = {};
+    const processQueueLevels = {}; // Track which queue each process is in
+    const executionTimelineItems: GanttItem[] = [];
+
+    // Initialize remaining burst times
+    simulationProcesses.forEach((process) => {
+      remainingBurstTimes[process.processId] = process.burstTime;
+      processQueueLevels[process.processId] = 0; // All processes start in the highest priority queue
+    });
+
+    const interval = setInterval(() => {
+      // Update the readyQueue based on the current process statuses
+      const currentReadyQueue = simulationProcesses.filter(
+        (process) =>
+          process.status === "Ready" || process.status === "Processing"
+      );
+
+      // Calculate current memory usage directly from the readyQueue state
+      const currentMemoryUsage = currentReadyQueue.reduce(
+        (acc, process) => acc + process.memorySize,
+        0
+      );
+
+      // Check for processes that have arrived at the current time
+      simulationProcesses.forEach((process) => {
+        if (process.status === "Not Ready" && process.arrivalTime === time) {
+          process.status =
+            currentMemoryUsage + process.memorySize > 1024 ||
+            jobQueue.length > 0
+              ? "Waiting for Memory"
+              : "Ready";
+
+          if (process.status === "Waiting for Memory") {
+            setJobQueue((prevJobQueue) => {
+              if (
+                !prevJobQueue.some((p) => p.processId === process.processId)
+              ) {
+                return [...prevJobQueue, process];
+              }
+              return prevJobQueue;
+            });
+          } else if (process.status === "Ready") {
+            // New processes always go to the highest priority queue
+            queues[0].push(process);
+            processQueueLevels[process.processId] = 0;
+          }
+        }
+      });
+
+      // Add newly arrived processes to the highest priority queue
+      while (
+        sortedProcesses.length > 0 &&
+        sortedProcesses[0].arrivalTime <= time
+      ) {
+        const newProcess = sortedProcesses.shift();
+        if (newProcess.status !== "Waiting for Memory") {
+          queues[0].push(newProcess);
+          processQueueLevels[newProcess.processId] = 0;
+        }
+      }
+
+      // Process the highest priority non-empty queue
+      let executed = false;
+      for (let queueIndex = 0; queueIndex < queues.length; queueIndex++) {
+        if (queues[queueIndex].length > 0) {
+          const currentProcess = queues[queueIndex].shift();
+          const processIndex = simulationProcesses.findIndex(
+            (p) => p.processId === currentProcess.processId
+          );
+
+          if (processIndex !== -1) {
+            // Determine quantum based on queue level
+            let quantum = 1; // Default for FCFS
+            if (queueIndex === 0) quantum = 2;
+            else if (queueIndex === 1) quantum = 4;
+
+            const executionTime = Math.min(
+              quantum,
+              remainingBurstTimes[currentProcess.processId]
+            );
+
+            simulationProcesses[processIndex].burstTime -= executionTime;
+            remainingBurstTimes[currentProcess.processId] -= executionTime;
+
+            // Update status
+            simulationProcesses.forEach((process, index) => {
+              if (index !== processIndex && process.status === "Processing") {
+                process.status = "Ready";
+              }
+            });
+            simulationProcesses[processIndex].status = "Processing";
+
+            // Add to execution timeline
+            executionTimelineItems.push({
+              color: simulationProcesses[processIndex].color,
+              endTime: time + executionTime,
+              processId: simulationProcesses[processIndex].processId,
+              startTime: time,
+            });
+
+            // Check if process is completed
+            if (remainingBurstTimes[currentProcess.processId] === 0) {
+              simulationProcesses[processIndex].status = "Completed";
+
+              // Try to add the first process from the jobQueue
+              setJobQueue((prevJobQueue) => {
+                if (prevJobQueue.length > 0) {
+                  const firstJob = prevJobQueue[0];
+                  const newMemoryUsage =
+                    currentMemoryUsage + firstJob.memorySize;
+                  if (newMemoryUsage <= 1024) {
+                    firstJob.status = "Ready";
+                    queues[0].push(firstJob); // New processes start at highest priority
+                    processQueueLevels[firstJob.processId] = 0;
+                    setReadyQueue((prevReadyQueue) => [
+                      ...prevReadyQueue,
+                      firstJob,
+                    ]);
+                    return prevJobQueue.slice(1);
+                  }
+                }
+                return prevJobQueue;
+              });
+            } else {
+              // If not completed, demote to a lower priority queue
+              const nextQueueLevel = Math.min(
+                queueIndex + 1,
+                queues.length - 1
+              );
+              queues[nextQueueLevel].push(currentProcess);
+              processQueueLevels[currentProcess.processId] = nextQueueLevel;
+            }
+
+            time += executionTime;
+            executed = true;
+            break; // Process only one queue per cycle
+          }
+        }
+      }
+
+      if (!executed) {
+        // Idle process - no process to execute
+        executionTimelineItems.push({
+          color: "#45475a",
+          endTime: time + 1,
+          processId: "Idle",
+          startTime: time,
+        });
+        time += 1;
+      }
+
+      // Update the state of readyQueue
+      setReadyQueue(
+        currentReadyQueue.filter((process) => process.status !== "Completed")
+      );
+      setJobQueue((prevJobQueue) =>
+        prevJobQueue.filter((process) => process.status !== "Completed")
+      );
+
+      setCurrentTime(time);
+
+      // Check if all processes are completed
+      const allQueuesEmpty = queues.every((queue) => queue.length === 0);
+      if (sortedProcesses.length === 0 && allQueuesEmpty) {
+        clearInterval(interval);
+        setIsSimulating(false);
+      }
+
+      setExecutionHistory(executionTimelineItems);
+      setSimulationProcesses([...simulationProcesses]);
+      setTotalTime(time);
+    }, 1000);
+
+    setIsSimulating(true);
+    setExecutionHistory([]);
+  };
+
+  const simulateLotteryScheduling = () => {
+    const sortedProcesses = [...simulationProcesses].sort(
+      (a, b) => a.arrivalTime - b.arrivalTime
+    );
+    let time = 0;
+    const remainingBurstTimes = {};
+    const tickets = {}; // Store the number of tickets for each process
+    const executionTimelineItems: GanttItem[] = [];
+    const processQueue = [];
+
+    // Initialize remaining burst times and assign tickets based on priority
+    // Higher priority = more tickets (inverse relationship)
+    simulationProcesses.forEach((process) => {
+      remainingBurstTimes[process.processId] = process.burstTime;
+      // Assign tickets inverse to priority (lower priority number = more important)
+      // So priority 1 gets 10 tickets, priority 10 gets 1 ticket
+      tickets[process.processId] = Math.max(1, 11 - process.priority);
+    });
+
+    const interval = setInterval(() => {
+      // Update the readyQueue based on the current process statuses
+      const currentReadyQueue = simulationProcesses.filter(
+        (process) =>
+          process.status === "Ready" || process.status === "Processing"
+      );
+
+      // Calculate current memory usage directly from the readyQueue state
+      const currentMemoryUsage = currentReadyQueue.reduce(
+        (acc, process) => acc + process.memorySize,
+        0
+      );
+
+      // Check for processes that have arrived at the current time
+      simulationProcesses.forEach((process) => {
+        if (process.status === "Not Ready" && process.arrivalTime === time) {
+          process.status =
+            currentMemoryUsage + process.memorySize > 1024 ||
+            jobQueue.length > 0
+              ? "Waiting for Memory"
+              : "Ready";
+
+          if (process.status === "Waiting for Memory") {
+            setJobQueue((prevJobQueue) => {
+              if (
+                !prevJobQueue.some((p) => p.processId === process.processId)
+              ) {
+                return [...prevJobQueue, process];
+              }
+              return prevJobQueue;
+            });
+          } else if (process.status === "Ready") {
+            processQueue.push(process);
+          }
+        }
+      });
+
+      // Add newly arrived processes to the process queue
+      while (
+        sortedProcesses.length > 0 &&
+        sortedProcesses[0].arrivalTime <= time
+      ) {
+        const newProcess = sortedProcesses.shift();
+        if (newProcess.status !== "Waiting for Memory") {
+          processQueue.push(newProcess);
+        }
+      }
+
+      if (processQueue.length > 0) {
+        // Lottery scheduling - randomly select a process based on ticket distribution
+        const readyProcesses = processQueue.filter(
+          (p) => p.status === "Ready" || p.status === "Processing"
+        );
+
+        if (readyProcesses.length > 0) {
+          // Calculate total tickets in the system
+          let totalTickets = 0;
+          for (const process of readyProcesses) {
+            totalTickets += tickets[process.processId];
+          }
+
+          // Generate a random ticket number
+          const winningTicket = Math.floor(Math.random() * totalTickets) + 1;
+
+          // Find the winning process
+          let ticketCounter = 0;
+          let winningProcess = null;
+
+          for (const process of readyProcesses) {
+            ticketCounter += tickets[process.processId];
+            if (ticketCounter >= winningTicket) {
+              winningProcess = process;
+              break;
+            }
+          }
+
+          const processIndex = simulationProcesses.findIndex(
+            (p) => p.processId === winningProcess.processId
+          );
+
+          if (processIndex !== -1) {
+            // Execute for one time unit
+            simulationProcesses[processIndex].burstTime -= 1;
+            remainingBurstTimes[winningProcess.processId] -= 1;
+
+            // Update status
+            simulationProcesses.forEach((process, index) => {
+              if (index !== processIndex && process.status === "Processing") {
+                process.status = "Ready";
+              }
+            });
+            simulationProcesses[processIndex].status = "Processing";
+
+            // Add to execution timeline
+            executionTimelineItems.push({
+              color: simulationProcesses[processIndex].color,
+              endTime: time + 1,
+              processId: simulationProcesses[processIndex].processId,
+              startTime: time,
+            });
+
+            // Check if process is completed
+            if (remainingBurstTimes[winningProcess.processId] === 0) {
+              processQueue.splice(
+                processQueue.findIndex(
+                  (p) => p.processId === winningProcess.processId
+                ),
+                1
+              );
+              simulationProcesses[processIndex].status = "Completed";
+
+              // Try to add the first process from the jobQueue
+              setJobQueue((prevJobQueue) => {
+                if (prevJobQueue.length > 0) {
+                  const firstJob = prevJobQueue[0];
+                  const newMemoryUsage =
+                    currentMemoryUsage + firstJob.memorySize;
+                  if (newMemoryUsage <= 1024) {
+                    firstJob.status = "Ready";
+                    processQueue.push(firstJob);
+                    setReadyQueue((prevReadyQueue) => [
+                      ...prevReadyQueue,
+                      firstJob,
+                    ]);
+                    return prevJobQueue.slice(1);
+                  }
+                }
+                return prevJobQueue;
+              });
+            }
+          }
+        } else {
+          // No ready processes
+          executionTimelineItems.push({
+            color: "#45475a",
+            endTime: time + 1,
+            processId: "Idle",
+            startTime: time,
+          });
+        }
+      } else {
+        // Idle process - no process to execute
+        executionTimelineItems.push({
+          color: "#45475a",
+          endTime: time + 1,
+          processId: "Idle",
+          startTime: time,
+        });
+      }
+
+      time += 1;
+
+      // Update the state of readyQueue
+      setReadyQueue(
+        currentReadyQueue.filter((process) => process.status !== "Completed")
+      );
+      setJobQueue((prevJobQueue) =>
+        prevJobQueue.filter((process) => process.status !== "Completed")
+      );
+
+      setCurrentTime(time);
+
+      // Check if all processes are completed
+      if (
+        sortedProcesses.length === 0 &&
+        processQueue.every((p) => p.status === "Completed")
+      ) {
+        clearInterval(interval);
+        setIsSimulating(false);
+      }
+
+      setExecutionHistory(executionTimelineItems);
+      setSimulationProcesses([...simulationProcesses]);
+      setTotalTime(time);
+    }, 1000);
+
+    setIsSimulating(true);
+    setExecutionHistory([]);
+  };
+
   useEffect(() => {
     simulationProcesses.forEach((process) => {
       if (
@@ -1121,22 +1949,44 @@ const Marked: FC = () => {
 
   return (
     <StyledMarked>
-      <StyledSelector>
-        <Button disabled={isSimulating} onClick={simulateFCFS}>
-          FCFS
-        </Button>
-        <Button disabled={isSimulating} onClick={simulateSJF}>
-          SJF (preemptive)
-        </Button>
-        <Button disabled={isSimulating} onClick={simulatePriority}>
-          Priority
-        </Button>
-        <Button disabled={isSimulating} onClick={() => simulateRoundRobin()}>
-          Round Robin
-        </Button>
-      </StyledSelector>
+      <AlgorithmContainer>
+        <AlgorithmTitle>Scheduling Algorithms</AlgorithmTitle>
+        <StyledSelector>
+          <Button disabled={isSimulating} onClick={simulateFCFS}>
+            FCFS
+          </Button>
+          <Button disabled={isSimulating} onClick={simulateSJF}>
+            SJF
+          </Button>
+          <Button disabled={isSimulating} onClick={simulateSRTF}>
+            SRTF
+          </Button>
+          <Button disabled={isSimulating} onClick={simulatePriority}>
+            Priority
+          </Button>
+          <Button disabled={isSimulating} onClick={() => simulateRoundRobin()}>
+            Round Robin
+          </Button>
+        </StyledSelector>
+
+        <StyledSelector>
+          <Button disabled={isSimulating} onClick={simulateMultiLevelQueue}>
+            Multi-level Queue
+          </Button>
+          <Button
+            disabled={isSimulating}
+            onClick={simulateMultiLevelFeedbackQueue}
+          >
+            MLFQ
+          </Button>
+          <Button disabled={isSimulating} onClick={simulateLotteryScheduling}>
+            Lottery
+          </Button>
+        </StyledSelector>
+      </AlgorithmContainer>
 
       <DesTime>
+        <TimeLabel>Simulation Time</TimeLabel>
         <DesDiv>
           <span>{currentTime}</span>
         </DesDiv>
