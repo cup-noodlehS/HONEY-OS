@@ -8,213 +8,160 @@ import Modal from "./modal";
 import type { SimulationProcess } from "./type";
 
 const StyledMarked = styled.div`
-  background-color: #fffdd0;
-  color: black;
-  padding-top: 2rem;
-  padding-bottom: 5rem;
-  padding-left: 5rem;
-  padding-right: 5rem;
+  background-color: #1e1e2e;
+  color: #cdd6f4;
+  padding: 1.5rem;
   overflow: auto;
-  height: 100vh; /* Ensure the container takes full viewport height */
+  height: 100vh;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
 `;
 
 const StyledSelector = styled.div`
-  align-items: center;
   display: flex;
   justify-content: center;
+  gap: 0.75rem;
   padding-bottom: 2rem;
+  flex-wrap: wrap;
 `;
 
 const DesTime = styled.div`
-  font-weight: bold;
-  align-items: center;
-  justify-content: center;
-  align-items: center;
   display: flex;
+  justify-content: center;
+  margin: 1rem 0 2rem;
 `;
 
 const DesDiv = styled.div`
-  font-size: 1.5rem;
+  font-size: 2rem;
+  font-weight: 600;
   color: white;
-  border-radius: 9999px;
-  background-color: #123456;
+  border-radius: 1rem;
+  background-color: #89b4fa;
+  display: flex;
   align-items: center;
   justify-content: center;
-  display: flex;
-  flex-direction: column;
-  width: 8rem;
-  height: 8rem;
-  border: 2px solid gold; /* Add this line for the gold border */
+  width: 10rem;
+  height: 6rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 `;
 
 const Button = styled.button<{ disabled: boolean }>`
-  background-color: ${({ disabled }) => (disabled ? "#cccccc" : "#4299e1")};
-  font-weight: bold;
-  padding: 0.5rem 1rem;
-  border-bottom-width: 4px;
-  border-bottom-style: solid;
-  border-bottom-color: #2b6cb0;
-  border-radius: 0.25rem;
-  color: white;
+  background-color: ${({ disabled }) => (disabled ? "#45475a" : "#89b4fa")};
+  font-weight: 600;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 0.5rem;
+  color: ${({ disabled }) => (disabled ? "#6c7086" : "white")};
   cursor: ${({ disabled }) => (disabled ? "not-allowed" : "pointer")};
-  margin-right: 10px;
-  padding: 8px 10px;
-  transition:
-    transform 200ms,
-    background-color 200ms; /* Add background-color to transition */
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-size: 0.875rem;
 
   &:hover {
-    background-color: ${({ disabled }) => (disabled ? "#cccccc" : "#0056b3")};
+    background-color: ${({ disabled }) => (disabled ? "#45475a" : "#74c7ec")};
+    transform: ${({ disabled }) => (disabled ? "none" : "translateY(-2px)")};
   }
 
   &:active {
-    background-color: #0056b3; /* Ensure the color stays consistent when active */
-    transform: scale(0.95); /* Scale the button to 0.95 when active */
+    transform: ${({ disabled }) => (disabled ? "none" : "translateY(0)")};
   }
+`;
+
+const ActionButtonsContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
 `;
 
 const Header = styled.span`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
-  color: black;
-  cursor: pointer;
-  padding: 5px 10px;
+  font-weight: 600;
+  color: #cdd6f4;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 `;
 
 const ProcessID = styled.span`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
+  font-weight: 500;
   color: white;
-  padding: 10px;
-  border-right: 2px solid black; /* Add right border */
+  padding: 0.75rem;
+  font-size: 0.875rem;
 `;
 
 const StyledContainer = styled.div`
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   margin-top: 1.5rem;
-  padding-left: 2px;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background-color: #313244;
 `;
 
 const getStatusColor = (status: string) => {
   switch (status) {
     case "Completed":
-      return "#00c04b";
+      return "#a6e3a1";
     case "Processing":
-      return "orange";
+      return "#fab387";
     case "Ready":
-      return "yellow";
+      return "#f9e2af";
     case "Waiting for Memory":
-      return "red";
+      return "#f38ba8";
     case "Not Ready":
-      return "grey";
+      return "#7f849c";
     default:
-      return "white";
+      return "#cdd6f4";
   }
 };
 
-const StyledDataContainer = styled(StyledContainer)<{ status: string }>`
-  background-color: ${({ status }) => getStatusColor(status)};
+const StyledDataContainer = styled.div<{ status: string }>`
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  border-bottom: 5px solid black;
+  background-color: #181825;
+  margin-bottom: 0.25rem;
+  border-left: 4px solid ${({ status }) => getStatusColor(status)};
+  border-radius: 0.25rem;
+  transition: transform 0.2s;
+
+  &:hover {
+    transform: translateX(2px);
+    background-color: #1e1e2e;
+  }
 `;
 
-const DataStyle = styled.div`
-  color: white;
-  font-weight: 800;
-  margin-left: 8rem;
-  padding: 1rem;
-  border-radius: 4px;
-`;
-
-const StyledVisualization = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  margin-top: 2rem;
-  border-top: 1px solid #000;
-  padding-top: 1rem;
-  width: 100%;
-`;
-
-const GanttChart = styled.div`
-  display: flex;
-  flex-direction: row;
-  width: 100%;
-  position: relative;
-`;
-
-const GanttBar = styled.div<{ color: string; left: number; width: number }>`
-  height: 30px;
-  background-color: ${({ color }) => color};
-  width: ${({ width }) => width}%;
-  text-align: center;
-  line-height: 30px;
-  color: white;
-  font-weight: bold;
-  position: absolute;
-  left: ${({ left }) => left}%;
-`;
-
-const TimeLabel = styled.div`
-  position: absolute;
-  top: 35px;
-  left: 0;
-  width: 100%;
-  text-align: start;
-  color: black;
-  padding-left: 2px;
-  font-size: 11px;
-`;
-
-const EndTimeLabel = styled.div`
-  position: absolute;
-  top: 35px;
-  right: 0;
-  text-align: start;
-  color: black;
-  font-size: 12px;
-`;
-
-const LoadingBarContainer = styled.div`
-  position: relative;
-  height: 10px;
-  width: 100%;
-  background-color: #e0e0e0;
+const QueueHeader = styled.div`
+  font-weight: 600;
   margin-bottom: 1rem;
-`;
-
-const LoadingBar = styled.div<{ width: number }>`
-  border-radius: 5px;
-  height: 100%;
-  background-color: #00ab41;
-  width: ${({ width }) => width}%;
-  transition: width 0.5s linear;
+  font-size: 1.1rem;
+  color: #cdd6f4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 `;
 
 const MainMemoryContainer = styled.div`
-  margin-top: 6rem;
+  margin-top: 2rem;
   width: 100%;
   display: flex;
   flex-direction: column;
-  border: 2px solid black;
-  padding: 1rem;
-  border-radius: 8px;
-  background-color: #f0f0f0;
-`;
-
-const MemorySegment = styled.div<{ color: string }>`
-  background-color: ${({ color }) => color};
-  margin: 5px 0;
-  padding: 10px;
-  border-radius: 4px;
-  color: white;
-  text-align: center;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  background-color: #313244;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 `;
 
 const QueueContainer = styled.div`
@@ -222,15 +169,59 @@ const QueueContainer = styled.div`
   width: 100%;
   display: flex;
   flex-direction: column;
-  border: 2px solid black;
-  padding: 1rem;
-  border-radius: 8px;
-  background-color: #f0f0f0;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  background-color: #313244;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 `;
 
-const QueueHeader = styled.div`
-  font-weight: bold;
-  margin-bottom: 1rem;
+const MemorySegment = styled.div<{ color: string }>`
+  background-color: ${({ color }) => color};
+  margin: 5px 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 500;
+`;
+
+const ProcessContainer = styled.div`
+  margin-top: 1rem;
+  max-height: 300px;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #313244;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: #45475a;
+    border-radius: 4px;
+  }
+`;
+
+const MemoryUsage = styled.div`
+  height: 8px;
+  width: 100%;
+  background-color: #45475a;
+  border-radius: 4px;
+  margin: 0.5rem 0 1rem;
+  overflow: hidden;
+`;
+
+const MemoryUsageFill = styled.div<{ percentage: number }>`
+  height: 100%;
+  width: ${({ percentage }) => percentage}%;
+  background-color: ${({ percentage }) =>
+    percentage > 80 ? "#f38ba8" : percentage > 60 ? "#fab387" : "#a6e3a1"};
+  transition: width 0.3s ease;
 `;
 
 const Marked: FC = () => {
@@ -941,20 +932,24 @@ const Marked: FC = () => {
     });
   }, [simulationProcesses, processes]);
 
+  // Calculate memory usage percentage for the progress bar
+  const memoryUsagePercentage =
+    readyQueue.reduce((acc, process) => acc + process.memorySize, 0) / 10.24;
+
   return (
     <StyledMarked>
       <StyledSelector>
         <Button disabled={isSimulating} onClick={simulateFCFS}>
-          {isSimulating ? "Simulating..." : "FCFS"}
+          FCFS
         </Button>
         <Button disabled={isSimulating} onClick={simulateSJF}>
-          {isSimulating ? "Simulating..." : "SJF (preemptive)"}
+          SJF (preemptive)
         </Button>
         <Button disabled={isSimulating} onClick={simulatePriority}>
-          {isSimulating ? "Simulating..." : "Priority"}
+          Priority
         </Button>
         <Button disabled={isSimulating} onClick={() => simulateRoundRobin()}>
-          {isSimulating ? "Simulating..." : "ROUND ROBIN"}
+          Round Robin
         </Button>
       </StyledSelector>
 
@@ -964,91 +959,113 @@ const Marked: FC = () => {
         </DesDiv>
       </DesTime>
 
-      <Button disabled={isSimulating} onClick={() => setIsModalOpen(true)}>
-        ADD PROCESS
-      </Button>
-      <Button disabled={isSimulating} onClick={addDummyData}>
-        ADD DATA
-      </Button>
+      <ActionButtonsContainer>
+        <Button disabled={isSimulating} onClick={() => setIsModalOpen(true)}>
+          Add Process
+        </Button>
+        <Button disabled={isSimulating} onClick={addDummyData}>
+          Add Data
+        </Button>
+        <Button disabled={isSimulating} onClick={resetProcesses}>
+          Reset
+        </Button>
+      </ActionButtonsContainer>
 
-      <Button disabled={isSimulating} onClick={resetProcesses}>
-        RESET
-      </Button>
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleAddProcess}
       />
+
       <StyledContainer>
-        <Header>PROCESS ID</Header>
-        <Header>BURST TIME</Header>
-        <Header>MEMORY SIZE</Header>
-        <Header>ARRIVAL TIME</Header>
-        <Header>PRIORITY</Header>
-        <Header>STATUS</Header>
+        <Header>Process ID</Header>
+        <Header>Burst Time</Header>
+        <Header>Memory Size</Header>
+        <Header>Arrival Time</Header>
+        <Header>Priority</Header>
+        <Header>Status</Header>
       </StyledContainer>
 
-      {simulationProcesses.map((process, index) => {
-        const {
-          processId,
-          burstTime,
-          memorySize,
-          arrivalTime,
-          priority,
-          status,
-          color,
-        } = process;
-        return (
-          <StyledDataContainer key={index} status={status}>
-            <ProcessID>{processId}</ProcessID>
-            <ProcessID>{burstTime}</ProcessID>
-            <ProcessID>{memorySize}</ProcessID>
-            <ProcessID>{arrivalTime}</ProcessID>
-            <ProcessID>{priority}</ProcessID>
-            <ProcessID>{status}</ProcessID>
-          </StyledDataContainer>
-        );
-      })}
+      <ProcessContainer>
+        {simulationProcesses.map((process, index) => {
+          const {
+            processId,
+            burstTime,
+            memorySize,
+            arrivalTime,
+            priority,
+            status,
+          } = process;
+          return (
+            <StyledDataContainer key={index} status={status}>
+              <ProcessID>{processId}</ProcessID>
+              <ProcessID>{burstTime}</ProcessID>
+              <ProcessID>{memorySize}</ProcessID>
+              <ProcessID>{arrivalTime}</ProcessID>
+              <ProcessID>{priority}</ProcessID>
+              <ProcessID>{status}</ProcessID>
+            </StyledDataContainer>
+          );
+        })}
+      </ProcessContainer>
 
       <MainMemoryContainer>
         <QueueHeader>
-          Main Memory (
-          {readyQueue.reduce((acc, process) => acc + process.memorySize, 0)} /
-          1024 MB)
+          Main Memory
+          <span>
+            {readyQueue.reduce((acc, process) => acc + process.memorySize, 0)} /
+            1024 MB
+          </span>
         </QueueHeader>
+        <MemoryUsage>
+          <MemoryUsageFill percentage={memoryUsagePercentage} />
+        </MemoryUsage>
         {readyQueue.map((process, index) => (
           <MemorySegment key={index} color={process.color}>
-            {process.processId} - {process.memorySize}KB
+            <span>{process.processId}</span>
+            <span>{process.memorySize} MB</span>
           </MemorySegment>
         ))}
       </MainMemoryContainer>
 
       <QueueContainer>
         <QueueHeader>Ready Queue</QueueHeader>
-        {readyQueue.map((process, index) => (
-          <StyledDataContainer key={index} status={process.status}>
-            <ProcessID>{process.processId}</ProcessID>
-            <ProcessID>{process.burstTime}</ProcessID>
-            <ProcessID>{process.memorySize}</ProcessID>
-            <ProcessID>{process.arrivalTime}</ProcessID>
-            <ProcessID>{process.priority}</ProcessID>
-            <ProcessID>{process.status}</ProcessID>
-          </StyledDataContainer>
-        ))}
+        {readyQueue.length === 0 ? (
+          <div style={{ color: "#7f849c", padding: "0.5rem 0" }}>
+            No processes in ready queue
+          </div>
+        ) : (
+          readyQueue.map((process, index) => (
+            <StyledDataContainer key={index} status={process.status}>
+              <ProcessID>{process.processId}</ProcessID>
+              <ProcessID>{process.burstTime}</ProcessID>
+              <ProcessID>{process.memorySize}</ProcessID>
+              <ProcessID>{process.arrivalTime}</ProcessID>
+              <ProcessID>{process.priority}</ProcessID>
+              <ProcessID>{process.status}</ProcessID>
+            </StyledDataContainer>
+          ))
+        )}
       </QueueContainer>
 
       <QueueContainer>
         <QueueHeader>Job Queue</QueueHeader>
-        {jobQueue.map((process, index) => (
-          <StyledDataContainer key={index} status={process.status}>
-            <ProcessID>{process.processId}</ProcessID>
-            <ProcessID>{process.burstTime}</ProcessID>
-            <ProcessID>{process.memorySize}</ProcessID>
-            <ProcessID>{process.arrivalTime}</ProcessID>
-            <ProcessID>{process.priority}</ProcessID>
-            <ProcessID>{process.status}</ProcessID>
-          </StyledDataContainer>
-        ))}
+        {jobQueue.length === 0 ? (
+          <div style={{ color: "#7f849c", padding: "0.5rem 0" }}>
+            No processes in job queue
+          </div>
+        ) : (
+          jobQueue.map((process, index) => (
+            <StyledDataContainer key={index} status={process.status}>
+              <ProcessID>{process.processId}</ProcessID>
+              <ProcessID>{process.burstTime}</ProcessID>
+              <ProcessID>{process.memorySize}</ProcessID>
+              <ProcessID>{process.arrivalTime}</ProcessID>
+              <ProcessID>{process.priority}</ProcessID>
+              <ProcessID>{process.status}</ProcessID>
+            </StyledDataContainer>
+          ))
+        )}
       </QueueContainer>
     </StyledMarked>
   );

@@ -1,12 +1,10 @@
-type SimulationProcess = {
-  arrivalTime: string;
+export type SimulationProcess = {
+  arrivalTime: number;
   burstTime: number;
+  color: string;
   memorySize: number;
   priority: number;
   processId: string;
   status: string;
   waitingTime: number;
-  color: string;
 };
-
-export type SimulationProcess;
