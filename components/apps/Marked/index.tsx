@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import styled from "styled-components";
 
 import useFile from "components/system/Files/FileEntry/useFile";
+import { useTheme } from "contexts/ThemeContext";
 import Modal from "./modal";
 import type { SimulationProcess } from "./type";
 
-const StyledMarked = styled.div`
-  background-color: #1e1e2e;
-  color: #cdd6f4;
+const StyledMarked = styled.div<{ isDarkMode: boolean }>`
+  background-color: ${({ isDarkMode }) => (isDarkMode ? "#1e1e2e" : "#f9f9fb")};
+  color: ${({ isDarkMode }) => (isDarkMode ? "#cdd6f4" : "#333344")};
   padding: 1.5rem;
   overflow: auto;
   height: 100vh;
@@ -44,12 +45,12 @@ const TimeLabel = styled.div`
   margin-bottom: 0.75rem;
 `;
 
-const DesDiv = styled.div`
+const DesDiv = styled.div<{ isDarkMode: boolean }>`
   font-size: 2rem;
   font-weight: 600;
   color: white;
   border-radius: 1rem;
-  background-color: #89b4fa;
+  background-color: ${({ isDarkMode }) => (isDarkMode ? "#89b4fa" : "#5c7cfa")};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -58,20 +59,35 @@ const DesDiv = styled.div`
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 `;
 
-const Button = styled.button<{ disabled: boolean }>`
-  background-color: ${({ disabled }) => (disabled ? "#45475a" : "#89b4fa")};
+const Button = styled.button<{ disabled: boolean; isDarkMode?: boolean }>`
+  background-color: ${({ disabled, isDarkMode = true }) =>
+    disabled
+      ? isDarkMode
+        ? "#45475a"
+        : "#d0d0d8"
+      : isDarkMode
+      ? "#89b4fa"
+      : "#5c7cfa"};
   font-weight: 600;
   padding: 0.6rem 1.2rem;
   border: none;
   border-radius: 0.5rem;
-  color: ${({ disabled }) => (disabled ? "#6c7086" : "white")};
+  color: ${({ disabled, isDarkMode = true }) =>
+    disabled ? (isDarkMode ? "#6c7086" : "#9999a8") : "white"};
   cursor: ${({ disabled }) => (disabled ? "not-allowed" : "pointer")};
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   font-size: 0.875rem;
 
   &:hover {
-    background-color: ${({ disabled }) => (disabled ? "#45475a" : "#74c7ec")};
+    background-color: ${({ disabled, isDarkMode = true }) =>
+      disabled
+        ? isDarkMode
+          ? "#45475a"
+          : "#d0d0d8"
+        : isDarkMode
+        ? "#74c7ec"
+        : "#4c6ef5"};
     transform: ${({ disabled }) => (disabled ? "none" : "translateY(-2px)")};
   }
 
@@ -88,112 +104,131 @@ const ActionButtonsContainer = styled.div`
   flex-wrap: wrap;
 `;
 
-const Header = styled.span`
+const Header = styled.span<{ isDarkMode: boolean }>`
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  color: #cdd6f4;
+  color: ${({ isDarkMode }) => (isDarkMode ? "#cdd6f4" : "#333344")};
   padding: 0.75rem;
   font-size: 0.875rem;
 `;
 
-const ProcessID = styled.span`
+const ProcessID = styled.span<{ isDarkMode: boolean }>`
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 500;
-  color: white;
+  color: ${({ isDarkMode }) => (isDarkMode ? "white" : "#333344")};
   padding: 0.75rem;
   font-size: 0.875rem;
 `;
 
-const StyledContainer = styled.div`
+const StyledContainer = styled.div<{ isDarkMode: boolean }>`
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   margin-top: 1.5rem;
   border-radius: 0.5rem;
   overflow: hidden;
-  background-color: #313244;
+  background-color: ${({ isDarkMode }) => (isDarkMode ? "#313244" : "#e9ecef")};
 `;
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "Completed":
-      return "#a6e3a1";
-    case "Processing":
-      return "#fab387";
-    case "Ready":
-      return "#f9e2af";
-    case "Waiting for Memory":
-      return "#f38ba8";
-    case "Not Ready":
-      return "#7f849c";
-    default:
-      return "#cdd6f4";
+const getStatusColor = (status: string, isDarkMode: boolean) => {
+  if (isDarkMode) {
+    switch (status) {
+      case "Completed":
+        return "#a6e3a1";
+      case "Processing":
+        return "#fab387";
+      case "Ready":
+        return "#f9e2af";
+      case "Waiting for Memory":
+        return "#f38ba8";
+      case "Not Ready":
+        return "#7f849c";
+      default:
+        return "#cdd6f4";
+    }
+  } else {
+    switch (status) {
+      case "Completed":
+        return "#40c057";
+      case "Processing":
+        return "#ff922b";
+      case "Ready":
+        return "#fcc419";
+      case "Waiting for Memory":
+        return "#f03e3e";
+      case "Not Ready":
+        return "#868e96";
+      default:
+        return "#495057";
+    }
   }
 };
 
-const StyledDataContainer = styled.div<{ status: string }>`
+const StyledDataContainer = styled.div<{ status: string; isDarkMode: boolean }>`
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  background-color: #181825;
+  background-color: ${({ isDarkMode }) => (isDarkMode ? "#181825" : "#f1f3f5")};
   margin-bottom: 0.25rem;
-  border-left: 4px solid ${({ status }) => getStatusColor(status)};
+  border-left: 4px solid
+    ${({ status, isDarkMode }) => getStatusColor(status, isDarkMode)};
   border-radius: 0.25rem;
   transition: transform 0.2s;
 
   &:hover {
     transform: translateX(2px);
-    background-color: #1e1e2e;
+    background-color: ${({ isDarkMode }) =>
+      isDarkMode ? "#1e1e2e" : "#e9ecef"};
   }
 `;
 
-const QueueHeader = styled.div`
+const QueueHeader = styled.div<{ isDarkMode: boolean }>`
   font-weight: 600;
   margin-bottom: 1rem;
   font-size: 1.1rem;
-  color: #cdd6f4;
+  color: ${({ isDarkMode }) => (isDarkMode ? "#cdd6f4" : "#333344")};
   display: flex;
   align-items: center;
   justify-content: space-between;
 `;
 
-const AlgorithmContainer = styled.div`
+const AlgorithmContainer = styled.div<{ isDarkMode: boolean }>`
   margin-top: 1rem;
   padding: 1.5rem;
-  background-color: #313244;
+  background-color: ${({ isDarkMode }) => (isDarkMode ? "#313244" : "#e9ecef")};
   border-radius: 0.75rem;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 `;
 
-const AlgorithmTitle = styled.div`
+const AlgorithmTitle = styled.div<{ isDarkMode: boolean }>`
   font-size: 1.25rem;
   font-weight: 600;
-  color: #cdd6f4;
+  color: ${({ isDarkMode }) => (isDarkMode ? "#cdd6f4" : "#333344")};
   margin-bottom: 1.25rem;
   text-align: center;
 `;
 
-const MainMemoryContainer = styled.div`
+const MainMemoryContainer = styled.div<{ isDarkMode: boolean }>`
   margin-top: 2rem;
   width: 100%;
   display: flex;
   flex-direction: column;
   padding: 1.5rem;
   border-radius: 0.75rem;
-  background-color: #313244;
+  background-color: ${({ isDarkMode }) => (isDarkMode ? "#313244" : "#e9ecef")};
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 `;
 
-const QueueContainer = styled.div`
+const QueueContainer = styled.div<{ isDarkMode: boolean }>`
   margin-top: 2rem;
   width: 100%;
   display: flex;
   flex-direction: column;
   padding: 1.5rem;
   border-radius: 0.75rem;
-  background-color: #313244;
+  background-color: ${({ isDarkMode }) => (isDarkMode ? "#313244" : "#e9ecef")};
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 `;
 
@@ -364,7 +399,37 @@ interface GanttItem {
   startTime: number;
 }
 
+const ThemeToggleButton = styled.button<{ isDarkMode: boolean }>`
+  position: absolute;
+  top: 2rem;
+  right: 1rem;
+  background-color: ${({ isDarkMode }) => (isDarkMode ? "#45475a" : "#e9ecef")};
+  color: ${({ isDarkMode }) => (isDarkMode ? "#cdd6f4" : "#333344")};
+  border: none;
+  border-radius: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+
+  &:hover {
+    background-color: ${({ isDarkMode }) =>
+      isDarkMode ? "#585b70" : "#dee2e6"};
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
 const Marked: FC = () => {
+  const { isDarkMode, toggleTheme } = useTheme();
   const { processes = {} } = useProcesses();
   const openFile = useFile(``);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -802,6 +867,7 @@ const Marked: FC = () => {
         clearInterval(interval);
         setIsSimulating(false);
       }
+      setExecutionHistory(executionTimelineItems);
       setSimulationProcesses([...simulationProcesses]);
       setTotalTime(time);
     }, 1000);
@@ -1243,11 +1309,12 @@ const Marked: FC = () => {
                 const newMemoryUsage = currentMemoryUsage + firstJob.memorySize;
                 if (newMemoryUsage <= 1024) {
                   firstJob.status = "Ready";
+                  processQueue.push(firstJob);
                   setReadyQueue((prevReadyQueue) => [
                     ...prevReadyQueue,
                     firstJob,
                   ]);
-                  return prevJobQueue.slice(1); // Remove the first job from the jobQueue
+                  return prevJobQueue.slice(1);
                 }
               }
               return prevJobQueue;
@@ -1948,58 +2015,108 @@ const Marked: FC = () => {
   const timeScale = totalTime > 0 ? 100 / totalTime : 0;
 
   return (
-    <StyledMarked>
-      <AlgorithmContainer>
-        <AlgorithmTitle>Scheduling Algorithms</AlgorithmTitle>
+    <StyledMarked isDarkMode={isDarkMode}>
+      <ThemeToggleButton
+        isDarkMode={isDarkMode}
+        onClick={toggleTheme}
+        aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+      >
+        {isDarkMode ? "☀️" : "🌙"}
+      </ThemeToggleButton>
+
+      <AlgorithmContainer isDarkMode={isDarkMode}>
+        <AlgorithmTitle isDarkMode={isDarkMode}>
+          Scheduling Algorithms
+        </AlgorithmTitle>
         <StyledSelector>
-          <Button disabled={isSimulating} onClick={simulateFCFS}>
+          <Button
+            disabled={isSimulating}
+            isDarkMode={isDarkMode}
+            onClick={simulateFCFS}
+          >
             FCFS
           </Button>
-          <Button disabled={isSimulating} onClick={simulateSJF}>
+          <Button
+            disabled={isSimulating}
+            isDarkMode={isDarkMode}
+            onClick={simulateSJF}
+          >
             SJF
           </Button>
-          <Button disabled={isSimulating} onClick={simulateSRTF}>
+          <Button
+            disabled={isSimulating}
+            isDarkMode={isDarkMode}
+            onClick={simulateSRTF}
+          >
             SRTF
           </Button>
-          <Button disabled={isSimulating} onClick={simulatePriority}>
+          <Button
+            disabled={isSimulating}
+            isDarkMode={isDarkMode}
+            onClick={simulatePriority}
+          >
             Priority
           </Button>
-          <Button disabled={isSimulating} onClick={() => simulateRoundRobin()}>
+          <Button
+            disabled={isSimulating}
+            isDarkMode={isDarkMode}
+            onClick={simulateRoundRobin}
+          >
             Round Robin
           </Button>
         </StyledSelector>
-
         <StyledSelector>
-          <Button disabled={isSimulating} onClick={simulateMultiLevelQueue}>
+          <Button
+            disabled={isSimulating}
+            isDarkMode={isDarkMode}
+            onClick={simulateMultiLevelQueue}
+          >
             Multi-level Queue
           </Button>
           <Button
             disabled={isSimulating}
+            isDarkMode={isDarkMode}
             onClick={simulateMultiLevelFeedbackQueue}
           >
             MLFQ
           </Button>
-          <Button disabled={isSimulating} onClick={simulateLotteryScheduling}>
+          <Button
+            disabled={isSimulating}
+            isDarkMode={isDarkMode}
+            onClick={simulateLotteryScheduling}
+          >
             Lottery
           </Button>
         </StyledSelector>
       </AlgorithmContainer>
 
-      <DesTime>
-        <TimeLabel>Simulation Time</TimeLabel>
-        <DesDiv>
-          <span>{currentTime}</span>
-        </DesDiv>
-      </DesTime>
+      <AlgorithmContainer isDarkMode={isDarkMode}>
+        <AlgorithmTitle isDarkMode={isDarkMode}>Simulation Time</AlgorithmTitle>
+        <DesTime>
+          <DesDiv isDarkMode={isDarkMode}>{currentTime}</DesDiv>
+        </DesTime>
+      </AlgorithmContainer>
 
       <ActionButtonsContainer>
-        <Button disabled={isSimulating} onClick={() => setIsModalOpen(true)}>
+        <Button
+          disabled={isSimulating}
+          isDarkMode={isDarkMode}
+          onClick={() => setIsModalOpen(true)}
+        >
           Add Process
         </Button>
-        <Button disabled={isSimulating} onClick={addDummyData}>
+        <Button
+          disabled={isSimulating}
+          isDarkMode={isDarkMode}
+          onClick={addDummyData}
+        >
           Add Data
         </Button>
-        <Button disabled={isSimulating} onClick={resetProcesses}>
+        <Button
+          disabled={isSimulating}
+          isDarkMode={isDarkMode}
+          onClick={resetProcesses}
+        >
           Reset
         </Button>
       </ActionButtonsContainer>
@@ -2010,13 +2127,13 @@ const Marked: FC = () => {
         onSubmit={handleAddProcess}
       />
 
-      <StyledContainer>
-        <Header>Process ID</Header>
-        <Header>Burst Time</Header>
-        <Header>Memory Size</Header>
-        <Header>Arrival Time</Header>
-        <Header>Priority</Header>
-        <Header>Status</Header>
+      <StyledContainer isDarkMode={isDarkMode}>
+        <Header isDarkMode={isDarkMode}>Process ID</Header>
+        <Header isDarkMode={isDarkMode}>Burst Time</Header>
+        <Header isDarkMode={isDarkMode}>Memory Size</Header>
+        <Header isDarkMode={isDarkMode}>Arrival Time</Header>
+        <Header isDarkMode={isDarkMode}>Priority</Header>
+        <Header isDarkMode={isDarkMode}>Status</Header>
       </StyledContainer>
 
       <ProcessContainer>
@@ -2030,13 +2147,17 @@ const Marked: FC = () => {
             status,
           } = process;
           return (
-            <StyledDataContainer key={index} status={status}>
-              <ProcessID>{processId}</ProcessID>
-              <ProcessID>{burstTime}</ProcessID>
-              <ProcessID>{memorySize}</ProcessID>
-              <ProcessID>{arrivalTime}</ProcessID>
-              <ProcessID>{priority}</ProcessID>
-              <ProcessID>{status}</ProcessID>
+            <StyledDataContainer
+              key={index}
+              status={status}
+              isDarkMode={isDarkMode}
+            >
+              <ProcessID isDarkMode={isDarkMode}>{processId}</ProcessID>
+              <ProcessID isDarkMode={isDarkMode}>{burstTime}</ProcessID>
+              <ProcessID isDarkMode={isDarkMode}>{memorySize} MB</ProcessID>
+              <ProcessID isDarkMode={isDarkMode}>{arrivalTime}</ProcessID>
+              <ProcessID isDarkMode={isDarkMode}>{priority}</ProcessID>
+              <ProcessID isDarkMode={isDarkMode}>{status}</ProcessID>
             </StyledDataContainer>
           );
         })}
@@ -2045,7 +2166,7 @@ const Marked: FC = () => {
       {executionHistory.length > 0 && (
         <GanttChartContainer>
           <GanttChartHeader>
-            <QueueHeader style={{ margin: 0 }}>
+            <QueueHeader isDarkMode={isDarkMode}>
               Process Execution Timeline
             </QueueHeader>
             <span>{`Current Time: ${currentTime}`}</span>
@@ -2093,8 +2214,8 @@ const Marked: FC = () => {
         </GanttChartContainer>
       )}
 
-      <MainMemoryContainer>
-        <QueueHeader>
+      <MainMemoryContainer isDarkMode={isDarkMode}>
+        <QueueHeader isDarkMode={isDarkMode}>
           Main Memory
           <span>
             {readyQueue.reduce((acc, process) => acc + process.memorySize, 0)} /
@@ -2112,41 +2233,57 @@ const Marked: FC = () => {
         ))}
       </MainMemoryContainer>
 
-      <QueueContainer>
-        <QueueHeader>Ready Queue</QueueHeader>
+      <QueueContainer isDarkMode={isDarkMode}>
+        <QueueHeader isDarkMode={isDarkMode}>Ready Queue</QueueHeader>
         {readyQueue.length === 0 ? (
           <div style={{ color: "#7f849c", padding: "0.5rem 0" }}>
             No processes in ready queue
           </div>
         ) : (
           readyQueue.map((process, index) => (
-            <StyledDataContainer key={index} status={process.status}>
-              <ProcessID>{process.processId}</ProcessID>
-              <ProcessID>{process.burstTime}</ProcessID>
-              <ProcessID>{process.memorySize}</ProcessID>
-              <ProcessID>{process.arrivalTime}</ProcessID>
-              <ProcessID>{process.priority}</ProcessID>
-              <ProcessID>{process.status}</ProcessID>
+            <StyledDataContainer
+              key={index}
+              status={process.status}
+              isDarkMode={isDarkMode}
+            >
+              <ProcessID isDarkMode={isDarkMode}>{process.processId}</ProcessID>
+              <ProcessID isDarkMode={isDarkMode}>{process.burstTime}</ProcessID>
+              <ProcessID isDarkMode={isDarkMode}>
+                {process.memorySize} MB
+              </ProcessID>
+              <ProcessID isDarkMode={isDarkMode}>
+                {process.arrivalTime}
+              </ProcessID>
+              <ProcessID isDarkMode={isDarkMode}>{process.priority}</ProcessID>
+              <ProcessID isDarkMode={isDarkMode}>{process.status}</ProcessID>
             </StyledDataContainer>
           ))
         )}
       </QueueContainer>
 
-      <QueueContainer>
-        <QueueHeader>Job Queue</QueueHeader>
+      <QueueContainer isDarkMode={isDarkMode}>
+        <QueueHeader isDarkMode={isDarkMode}>Job Queue</QueueHeader>
         {jobQueue.length === 0 ? (
           <div style={{ color: "#7f849c", padding: "0.5rem 0" }}>
             No processes in job queue
           </div>
         ) : (
           jobQueue.map((process, index) => (
-            <StyledDataContainer key={index} status={process.status}>
-              <ProcessID>{process.processId}</ProcessID>
-              <ProcessID>{process.burstTime}</ProcessID>
-              <ProcessID>{process.memorySize}</ProcessID>
-              <ProcessID>{process.arrivalTime}</ProcessID>
-              <ProcessID>{process.priority}</ProcessID>
-              <ProcessID>{process.status}</ProcessID>
+            <StyledDataContainer
+              key={index}
+              status={process.status}
+              isDarkMode={isDarkMode}
+            >
+              <ProcessID isDarkMode={isDarkMode}>{process.processId}</ProcessID>
+              <ProcessID isDarkMode={isDarkMode}>{process.burstTime}</ProcessID>
+              <ProcessID isDarkMode={isDarkMode}>
+                {process.memorySize} MB
+              </ProcessID>
+              <ProcessID isDarkMode={isDarkMode}>
+                {process.arrivalTime}
+              </ProcessID>
+              <ProcessID isDarkMode={isDarkMode}>{process.priority}</ProcessID>
+              <ProcessID isDarkMode={isDarkMode}>{process.status}</ProcessID>
             </StyledDataContainer>
           ))
         )}
