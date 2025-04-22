@@ -22,11 +22,11 @@ const speakMessage = (m: string): void => {
   window.speechSynthesis.speak(utterance);
 };
 
-const StyledButton = styled.button`
+const StyledButton = styled.button<{ $active?: boolean }>`
   position: fixed;
   bottom: 20px;
   right: 20px;
-  background-color: #4caf50;
+  background-color: ${({ $active }) => ($active ? "#ff4b4b" : "#4caf50")};
   color: white;
   border: none;
   border-radius: 50%;
@@ -34,15 +34,67 @@ const StyledButton = styled.button`
   height: 60px;
   font-size: 24px;
   cursor: pointer;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: ${({ $active }) =>
+    $active
+      ? "0 0 0 4px rgba(255, 75, 75, 0.3), 0 4px 8px rgba(0, 0, 0, 0.2)"
+      : "0 4px 8px rgba(0, 0, 0, 0.2)"};
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition:
+    background-color 0.3s ease,
+    box-shadow 0.3s ease;
 
   &:hover {
-    background-color: #45a049;
+    background-color: ${({ $active }) => ($active ? "#e63e3e" : "#45a049")};
   }
+`;
+
+const MicrophoneIndicator = styled.div<{ $active?: boolean }>`
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+`;
+
+const SoundWave = styled.div<{ $active?: boolean; $delay?: string }>`
+  position: absolute;
+  width: 4px;
+  height: ${({ $active }) => ($active ? "16px" : "0px")};
+  background-color: white;
+  border-radius: 2px;
+  margin: 0 2px;
+  animation: ${({ $active, $delay }) =>
+    $active ? `soundWave 1s infinite ${$delay}` : "none"};
+  opacity: ${({ $active }) => ($active ? 1 : 0)};
+  transition:
+    height 0.3s ease,
+    opacity 0.3s ease;
+
+  @keyframes soundWave {
+    0% {
+      height: 4px;
+    }
+    50% {
+      height: 16px;
+    }
+    100% {
+      height: 4px;
+    }
+  }
+`;
+
+const WaveContainer = styled.div`
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
 `;
 
 const StyledContainer = styled.div`
@@ -61,7 +113,7 @@ const Index = (): React.ReactElement => {
   useGlobalKeyboardShortcuts();
   useGlobalErrorHandler();
   const [showGif, setShowGif] = useState<boolean>(false);
-  const { message, startListening } = useVoiceCommand();
+  const { message, startListening, isListening } = useVoiceCommand();
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const { open } = useProcesses();
 
@@ -112,11 +164,6 @@ const Index = (): React.ReactElement => {
         const appName = normalizedMessage.split("open")[1]?.trim();
 
         if (appName) {
-          // Get available app names from processDirectory
-          const availableApps = Object.keys(processDirectory).map((app) =>
-            app.toLowerCase()
-          );
-
           // Find the closest matching app
           const matchingApp = Object.keys(processDirectory).find((app) =>
             appName.includes(app.toLowerCase())
@@ -158,10 +205,40 @@ const Index = (): React.ReactElement => {
       )}
 
       <StyledButton
+        $active={isListening}
         onClick={startListening}
-        title="Press to start voice recognition (or use Ctrl+Space)"
+        title={
+          isListening
+            ? "Microphone is active"
+            : "Press to start voice recognition (or use Ctrl+Space)"
+        }
       >
-        🎤
+        <MicrophoneIndicator $active={isListening}>
+          <WaveContainer>
+            <SoundWave
+              $active={isListening}
+              $delay="0s"
+              style={{ transform: "translateX(-8px)" }}
+            />
+            <SoundWave
+              $active={isListening}
+              $delay="0.2s"
+              style={{ transform: "translateX(-4px)" }}
+            />
+            <SoundWave $active={isListening} $delay="0.1s" />
+            <SoundWave
+              $active={isListening}
+              $delay="0.3s"
+              style={{ transform: "translateX(4px)" }}
+            />
+            <SoundWave
+              $active={isListening}
+              $delay="0.15s"
+              style={{ transform: "translateX(8px)" }}
+            />
+          </WaveContainer>
+          {!isListening && "🎤"}
+        </MicrophoneIndicator>
       </StyledButton>
     </div>
   );
