@@ -114,7 +114,7 @@ const Index = (): React.ReactElement => {
   useGlobalErrorHandler();
   const [showGif, setShowGif] = useState<boolean>(false);
   const { message, startListening, isListening } = useVoiceCommand();
-  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isOpen, setIsOpen] = useState<boolean>(true);
   const { open } = useProcesses();
 
   useEffect(() => {

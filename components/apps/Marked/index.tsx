@@ -23,6 +23,43 @@ const StyledMarked = styled.div<{ isDarkMode: boolean }>`
     sans-serif;
 `;
 
+const TabContainer = styled.div<{ isDarkMode: boolean }>`
+  display: flex;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid
+    ${({ isDarkMode }) => (isDarkMode ? "#45475a" : "#e9ecef")};
+`;
+
+const Tab = styled.button<{ isActive: boolean; isDarkMode: boolean }>`
+  background-color: ${({ isActive, isDarkMode }) =>
+    isActive ? (isDarkMode ? "#89b4fa" : "#5c7cfa") : "transparent"};
+  color: ${({ isActive, isDarkMode }) =>
+    isActive ? "white" : isDarkMode ? "#cdd6f4" : "#333344"};
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 0.5rem 0.5rem 0 0;
+  transition: all 0.2s ease;
+  margin-right: 0.5rem;
+
+  &:hover {
+    background-color: ${({ isActive, isDarkMode }) =>
+      isActive
+        ? isDarkMode
+          ? "#89b4fa"
+          : "#5c7cfa"
+        : isDarkMode
+        ? "#45475a"
+        : "#e9ecef"};
+  }
+`;
+
+const TabContent = styled.div<{ isVisible: boolean }>`
+  display: ${({ isVisible }) => (isVisible ? "block" : "none")};
+`;
+
 const StyledSelector = styled.div`
   display: flex;
   justify-content: center;
@@ -399,6 +436,13 @@ interface GanttItem {
   startTime: number;
 }
 
+interface PageReplacementStep {
+  page: number;
+  frames: (number | undefined)[];
+  isFault: boolean;
+  newFrameIndex?: number;
+}
+
 const ThemeToggleButton = styled.button<{ isDarkMode: boolean }>`
   position: absolute;
   top: 2rem;
@@ -428,11 +472,181 @@ const ThemeToggleButton = styled.button<{ isDarkMode: boolean }>`
   }
 `;
 
+// Page Replacement Algorithm Styled Components
+const ConfigContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+`;
+
+const ConfigSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+const ConfigLabel = styled.label<{ isDarkMode: boolean }>`
+  font-weight: 600;
+  color: ${({ isDarkMode }) => (isDarkMode ? "#cdd6f4" : "#333344")};
+  font-size: 0.9rem;
+`;
+
+const ReferenceStringInput = styled.input<{ isDarkMode: boolean }>`
+  padding: 0.75rem;
+  border: 2px solid ${({ isDarkMode }) => (isDarkMode ? "#45475a" : "#e9ecef")};
+  border-radius: 0.5rem;
+  background-color: ${({ isDarkMode }) => (isDarkMode ? "#1e1e2e" : "#ffffff")};
+  color: ${({ isDarkMode }) => (isDarkMode ? "#cdd6f4" : "#333344")};
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ isDarkMode }) => (isDarkMode ? "#89b4fa" : "#5c7cfa")};
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+const FrameInput = styled.input<{ isDarkMode: boolean }>`
+  padding: 0.75rem;
+  border: 2px solid ${({ isDarkMode }) => (isDarkMode ? "#45475a" : "#e9ecef")};
+  border-radius: 0.5rem;
+  background-color: ${({ isDarkMode }) => (isDarkMode ? "#1e1e2e" : "#ffffff")};
+  color: ${({ isDarkMode }) => (isDarkMode ? "#cdd6f4" : "#333344")};
+  font-size: 0.9rem;
+  width: 100px;
+  transition: border-color 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ isDarkMode }) => (isDarkMode ? "#89b4fa" : "#5c7cfa")};
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+const ResultsContainer = styled.div`
+  margin-top: 1rem;
+`;
+
+const ResultsSummary = styled.div<{ isDarkMode: boolean }>`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  background-color: ${({ isDarkMode }) => (isDarkMode ? "#181825" : "#f1f3f5")};
+  border-radius: 0.5rem;
+  border: 2px solid ${({ isDarkMode }) => (isDarkMode ? "#45475a" : "#e9ecef")};
+`;
+
+const SummaryItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+`;
+
+const SummaryLabel = styled.span`
+  font-size: 0.8rem;
+  opacity: 0.8;
+  margin-bottom: 0.25rem;
+`;
+
+const SummaryValue = styled.span`
+  font-size: 1.5rem;
+  font-weight: 600;
+`;
+
+const TimelineContainer = styled.div`
+  overflow-x: auto;
+  margin-top: 1rem;
+`;
+
+const TimelineHeader = styled.div<{ isDarkMode: boolean }>`
+  display: grid;
+  grid-template-columns: 60px 60px repeat(var(--frame-count, 3), 80px) 80px;
+  background-color: ${({ isDarkMode }) => (isDarkMode ? "#45475a" : "#e9ecef")};
+  border-radius: 0.5rem 0.5rem 0 0;
+  font-weight: 600;
+`;
+
+const TimelineBody = styled.div`
+  max-height: 400px;
+  overflow-y: auto;
+`;
+
+const TimelineRow = styled.div<{ isDarkMode: boolean; isFault: boolean }>`
+  display: grid;
+  grid-template-columns: 60px 60px repeat(var(--frame-count, 3), 80px) 80px;
+  background-color: ${({ isDarkMode, isFault }) =>
+    isFault
+      ? isDarkMode
+        ? "#f38ba8"
+        : "#ffe0e0"
+      : isDarkMode
+      ? "#181825"
+      : "#f9f9f9"};
+  border-bottom: 1px solid
+    ${({ isDarkMode }) => (isDarkMode ? "#45475a" : "#e9ecef")};
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: ${({ isDarkMode }) =>
+      isDarkMode ? "#1e1e2e" : "#f0f0f0"};
+  }
+`;
+
+const TimelineCell = styled.div<{ isDarkMode: boolean }>`
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: ${({ isDarkMode }) => (isDarkMode ? "#cdd6f4" : "#333344")};
+  border-right: 1px solid
+    ${({ isDarkMode }) => (isDarkMode ? "#45475a" : "#e9ecef")};
+`;
+
+const FrameCell = styled(TimelineCell)<{ isNew: boolean }>`
+  font-weight: ${({ isNew }) => (isNew ? "600" : "normal")};
+  background-color: ${({ isNew, isDarkMode }) =>
+    isNew ? (isDarkMode ? "#a6e3a1" : "#d4edda") : "transparent"};
+  color: ${({ isNew, isDarkMode }) =>
+    isNew
+      ? isDarkMode
+        ? "#000000"
+        : "#155724"
+      : isDarkMode
+      ? "#cdd6f4"
+      : "#333344"};
+`;
+
+const StatusCell = styled(TimelineCell)<{ isFault: boolean }>`
+  font-weight: 600;
+  color: ${({ isFault, isDarkMode }) =>
+    isFault
+      ? isDarkMode
+        ? "#f38ba8"
+        : "#dc3545"
+      : isDarkMode
+      ? "#a6e3a1"
+      : "#28a745"};
+`;
+
 const Marked: FC = () => {
   const { isDarkMode, toggleTheme } = useTheme();
   const { processes = {} } = useProcesses();
   const openFile = useFile(``);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"scheduling" | "replacement">(
+    "scheduling"
+  );
   const [simulationProcesses, setSimulationProcesses] = useState<
     SimulationProcess[]
   >([]);
@@ -444,6 +658,18 @@ const Marked: FC = () => {
   const [readyQueue, setReadyQueue] = useState<SimulationProcess[]>([]);
   const [jobQueue, setJobQueue] = useState<SimulationProcess[]>([]);
   const [executionHistory, setExecutionHistory] = useState<GanttItem[]>([]);
+
+  // Page Replacement Algorithm States
+  const [pageReferenceString, setPageReferenceString] = useState(
+    "7,0,1,2,0,3,0,4,2,3,0,3,2,1,2,0,1,7,0,1"
+  );
+  const [numberOfFrames, setNumberOfFrames] = useState(3);
+  const [pageReplacementHistory, setPageReplacementHistory] = useState<
+    PageReplacementStep[]
+  >([]);
+  const [pageFaults, setPageFaults] = useState(0);
+  const [currentAlgorithm, setCurrentAlgorithm] = useState("");
+  const [pageReferences, setPageReferences] = useState<number[]>([]);
 
   const handleAddProcess = (process: SimulationProcess) => {
     setSimulationProcesses((prevProcesses) => [...prevProcesses, process]);
@@ -568,8 +794,8 @@ const Marked: FC = () => {
       (a, b) => a.arrivalTime - b.arrivalTime
     );
     let time = 0;
-    const scheduledProcesses = [];
-    const processQueue = [];
+    const scheduledProcesses: any[] = [];
+    const processQueue: SimulationProcess[] = [];
     const executionTimelineItems: GanttItem[] = [];
 
     const interval = setInterval(() => {
@@ -724,9 +950,9 @@ const Marked: FC = () => {
       (a, b) => a.arrivalTime - b.arrivalTime
     );
     let time = 0;
-    const scheduledProcesses = [];
-    const processQueue = [];
-    const remainingBurstTimes = {};
+    const scheduledProcesses: any[] = [];
+    const processQueue: SimulationProcess[] = [];
+    const remainingBurstTimes: Record<string, number> = {};
     const executionTimelineItems: GanttItem[] = [];
 
     sortedProcesses.forEach((process) => {
@@ -880,9 +1106,9 @@ const Marked: FC = () => {
       (a, b) => a.arrivalTime - b.arrivalTime
     );
     let time = 0;
-    const scheduledProcesses = [];
-    const processQueue = [];
-    const remainingBurstTimes = {};
+    const scheduledProcesses: any[] = [];
+    const processQueue: SimulationProcess[] = [];
+    const remainingBurstTimes: Record<string, number> = {};
     const executionTimelineItems: GanttItem[] = [];
 
     // Initialize remaining burst times
@@ -1993,6 +2219,165 @@ const Marked: FC = () => {
     setExecutionHistory([]);
   };
 
+  // Page Replacement Algorithm Functions
+  const parseReferenceString = (refString: string): number[] => {
+    return refString
+      .split(",")
+      .map((s) => parseInt(s.trim()))
+      .filter((n) => !isNaN(n));
+  };
+
+  const generateRandomReferenceString = () => {
+    const length = 20;
+    const maxPage = 9;
+    const randomPages = Array.from({ length }, () =>
+      Math.floor(Math.random() * maxPage)
+    );
+    setPageReferenceString(randomPages.join(","));
+  };
+
+  const resetPageReplacement = () => {
+    setPageReplacementHistory([]);
+    setPageFaults(0);
+    setCurrentAlgorithm("");
+    setPageReferences([]);
+  };
+
+  const simulatePageReplacement = (algorithm: string) => {
+    const references = parseReferenceString(pageReferenceString);
+    if (references.length === 0) {
+      alert("Please enter a valid page reference string");
+      return;
+    }
+
+    setPageReferences(references);
+    setCurrentAlgorithm(algorithm);
+    setIsSimulating(true);
+
+    let frames: (number | undefined)[] = new Array(numberOfFrames).fill(
+      undefined
+    );
+    let faults = 0;
+    const history: PageReplacementStep[] = [];
+    let accessOrder: number[] = []; // For LRU
+    let clockPointer = 0; // For Clock algorithm
+    let referenceBits: boolean[] = new Array(numberOfFrames).fill(false); // For Clock
+
+    const interval = setInterval(() => {
+      if (history.length >= references.length) {
+        clearInterval(interval);
+        setIsSimulating(false);
+        return;
+      }
+
+      const currentPage = references[history.length];
+      let isFault = false;
+      let newFrameIndex: number | undefined;
+
+      // Check if page is already in frames
+      const pageIndex = frames.indexOf(currentPage);
+
+      if (pageIndex !== -1) {
+        // Page hit
+        if (algorithm === "LRU") {
+          // Update access order for LRU
+          accessOrder = accessOrder.filter((p) => p !== currentPage);
+          accessOrder.push(currentPage);
+        } else if (algorithm === "Clock") {
+          // Set reference bit for Clock
+          referenceBits[pageIndex] = true;
+        }
+      } else {
+        // Page fault
+        isFault = true;
+        faults++;
+
+        // Find empty frame first
+        const emptyIndex = frames.indexOf(undefined);
+
+        if (emptyIndex !== -1) {
+          // Use empty frame
+          frames[emptyIndex] = currentPage;
+          newFrameIndex = emptyIndex;
+
+          if (algorithm === "LRU") {
+            accessOrder.push(currentPage);
+          }
+        } else {
+          // Need to replace a page
+          let replaceIndex = 0;
+
+          switch (algorithm) {
+            case "FIFO":
+              // Replace the oldest page (first in)
+              replaceIndex = history.length % numberOfFrames;
+              break;
+
+            case "LRU":
+              // Replace least recently used
+              const lruPage = accessOrder[0];
+              replaceIndex = frames.indexOf(lruPage);
+              accessOrder = accessOrder.filter((p) => p !== lruPage);
+              accessOrder.push(currentPage);
+              break;
+
+            case "Optimal":
+              // Replace page that will be used farthest in future
+              let farthestIndex = -1;
+              let farthestDistance = -1;
+
+              for (let i = 0; i < frames.length; i++) {
+                const page = frames[i];
+                let nextUse = references.length; // Default to never used again
+
+                for (let j = history.length + 1; j < references.length; j++) {
+                  if (references[j] === page) {
+                    nextUse = j;
+                    break;
+                  }
+                }
+
+                if (nextUse > farthestDistance) {
+                  farthestDistance = nextUse;
+                  farthestIndex = i;
+                }
+              }
+
+              replaceIndex = farthestIndex;
+              break;
+
+            case "Clock":
+              // Clock algorithm (Second Chance)
+              while (referenceBits[clockPointer]) {
+                referenceBits[clockPointer] = false;
+                clockPointer = (clockPointer + 1) % numberOfFrames;
+              }
+              replaceIndex = clockPointer;
+              clockPointer = (clockPointer + 1) % numberOfFrames;
+              break;
+
+            default:
+              replaceIndex = 0;
+          }
+
+          frames[replaceIndex] = currentPage;
+          newFrameIndex = replaceIndex;
+        }
+      }
+
+      // Record the step
+      history.push({
+        page: currentPage,
+        frames: [...frames],
+        isFault,
+        newFrameIndex,
+      });
+
+      setPageReplacementHistory([...history]);
+      setPageFaults(faults);
+    }, 1000);
+  };
+
   useEffect(() => {
     simulationProcesses.forEach((process) => {
       if (
@@ -2024,270 +2409,474 @@ const Marked: FC = () => {
         {isDarkMode ? "☀️" : "🌙"}
       </ThemeToggleButton>
 
-      <AlgorithmContainer isDarkMode={isDarkMode}>
-        <AlgorithmTitle isDarkMode={isDarkMode}>
+      <TabContainer isDarkMode={isDarkMode}>
+        <Tab
+          isActive={activeTab === "scheduling"}
+          isDarkMode={isDarkMode}
+          onClick={() => setActiveTab("scheduling")}
+        >
           Scheduling Algorithms
-        </AlgorithmTitle>
-        <StyledSelector>
-          <Button
-            disabled={isSimulating}
-            isDarkMode={isDarkMode}
-            onClick={simulateFCFS}
-          >
-            FCFS
-          </Button>
-          <Button
-            disabled={isSimulating}
-            isDarkMode={isDarkMode}
-            onClick={simulateSJF}
-          >
-            SJF
-          </Button>
-          <Button
-            disabled={isSimulating}
-            isDarkMode={isDarkMode}
-            onClick={simulateSRTF}
-          >
-            SRTF
-          </Button>
-          <Button
-            disabled={isSimulating}
-            isDarkMode={isDarkMode}
-            onClick={simulatePriority}
-          >
-            Priority
-          </Button>
-          <Button
-            disabled={isSimulating}
-            isDarkMode={isDarkMode}
-            onClick={simulateRoundRobin}
-          >
-            Round Robin
-          </Button>
-        </StyledSelector>
-        <StyledSelector>
-          <Button
-            disabled={isSimulating}
-            isDarkMode={isDarkMode}
-            onClick={simulateMultiLevelQueue}
-          >
-            Multi-level Queue
-          </Button>
-          <Button
-            disabled={isSimulating}
-            isDarkMode={isDarkMode}
-            onClick={simulateMultiLevelFeedbackQueue}
-          >
-            MLFQ
-          </Button>
-          <Button
-            disabled={isSimulating}
-            isDarkMode={isDarkMode}
-            onClick={simulateLotteryScheduling}
-          >
-            Lottery
-          </Button>
-        </StyledSelector>
-      </AlgorithmContainer>
-
-      <AlgorithmContainer isDarkMode={isDarkMode}>
-        <AlgorithmTitle isDarkMode={isDarkMode}>Simulation Time</AlgorithmTitle>
-        <DesTime>
-          <DesDiv isDarkMode={isDarkMode}>{currentTime}</DesDiv>
-        </DesTime>
-      </AlgorithmContainer>
-
-      <ActionButtonsContainer>
-        <Button
-          disabled={isSimulating}
+        </Tab>
+        <Tab
+          isActive={activeTab === "replacement"}
           isDarkMode={isDarkMode}
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => setActiveTab("replacement")}
         >
-          Add Process
-        </Button>
-        <Button
-          disabled={isSimulating}
-          isDarkMode={isDarkMode}
-          onClick={addDummyData}
-        >
-          Add Data
-        </Button>
-        <Button
-          disabled={isSimulating}
-          isDarkMode={isDarkMode}
-          onClick={resetProcesses}
-        >
-          Reset
-        </Button>
-      </ActionButtonsContainer>
+          Replacement Algorithms
+        </Tab>
+      </TabContainer>
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleAddProcess}
-      />
-
-      <StyledContainer isDarkMode={isDarkMode}>
-        <Header isDarkMode={isDarkMode}>Process ID</Header>
-        <Header isDarkMode={isDarkMode}>Burst Time</Header>
-        <Header isDarkMode={isDarkMode}>Memory Size</Header>
-        <Header isDarkMode={isDarkMode}>Arrival Time</Header>
-        <Header isDarkMode={isDarkMode}>Priority</Header>
-        <Header isDarkMode={isDarkMode}>Status</Header>
-      </StyledContainer>
-
-      <ProcessContainer>
-        {simulationProcesses.map((process, index) => {
-          const {
-            processId,
-            burstTime,
-            memorySize,
-            arrivalTime,
-            priority,
-            status,
-          } = process;
-          return (
-            <StyledDataContainer
-              key={index}
-              status={status}
+      <TabContent isVisible={activeTab === "scheduling"}>
+        <AlgorithmContainer isDarkMode={isDarkMode}>
+          <AlgorithmTitle isDarkMode={isDarkMode}>
+            Scheduling Algorithms
+          </AlgorithmTitle>
+          <StyledSelector>
+            <Button
+              disabled={isSimulating}
               isDarkMode={isDarkMode}
+              onClick={simulateFCFS}
             >
-              <ProcessID isDarkMode={isDarkMode}>{processId}</ProcessID>
-              <ProcessID isDarkMode={isDarkMode}>{burstTime}</ProcessID>
-              <ProcessID isDarkMode={isDarkMode}>{memorySize} MB</ProcessID>
-              <ProcessID isDarkMode={isDarkMode}>{arrivalTime}</ProcessID>
-              <ProcessID isDarkMode={isDarkMode}>{priority}</ProcessID>
-              <ProcessID isDarkMode={isDarkMode}>{status}</ProcessID>
-            </StyledDataContainer>
-          );
-        })}
-      </ProcessContainer>
+              FCFS
+            </Button>
+            <Button
+              disabled={isSimulating}
+              isDarkMode={isDarkMode}
+              onClick={simulateSJF}
+            >
+              SJF
+            </Button>
+            <Button
+              disabled={isSimulating}
+              isDarkMode={isDarkMode}
+              onClick={simulateSRTF}
+            >
+              SRTF
+            </Button>
+            <Button
+              disabled={isSimulating}
+              isDarkMode={isDarkMode}
+              onClick={simulatePriority}
+            >
+              Priority
+            </Button>
+            <Button
+              disabled={isSimulating}
+              isDarkMode={isDarkMode}
+              onClick={() => simulateRoundRobin()}
+            >
+              Round Robin
+            </Button>
+          </StyledSelector>
+          <StyledSelector>
+            <Button
+              disabled={isSimulating}
+              isDarkMode={isDarkMode}
+              onClick={simulateMultiLevelQueue}
+            >
+              Multi-level Queue
+            </Button>
+            <Button
+              disabled={isSimulating}
+              isDarkMode={isDarkMode}
+              onClick={simulateMultiLevelFeedbackQueue}
+            >
+              MLFQ
+            </Button>
+            <Button
+              disabled={isSimulating}
+              isDarkMode={isDarkMode}
+              onClick={simulateLotteryScheduling}
+            >
+              Lottery
+            </Button>
+          </StyledSelector>
+        </AlgorithmContainer>
 
-      {executionHistory.length > 0 && (
-        <GanttChartContainer>
-          <GanttChartHeader>
-            <QueueHeader isDarkMode={isDarkMode}>
-              Process Execution Timeline
-            </QueueHeader>
-            <span>{`Current Time: ${currentTime}`}</span>
-          </GanttChartHeader>
+        <AlgorithmContainer isDarkMode={isDarkMode}>
+          <AlgorithmTitle isDarkMode={isDarkMode}>
+            Simulation Time
+          </AlgorithmTitle>
+          <DesTime>
+            <DesDiv isDarkMode={isDarkMode}>{currentTime}</DesDiv>
+          </DesTime>
+        </AlgorithmContainer>
 
-          <GanttTimeline>
-            {executionHistory.map((item, index) => (
-              <GanttBar
-                key={`${item.processId}-${item.startTime}`}
-                color={item.color}
-                data-time={item.startTime}
-                duration={item.endTime - item.startTime}
-                title={`${item.processId} (Time: ${item.startTime}-${item.endTime})`}
-                widthPercentage={timeScale}
+        <ActionButtonsContainer>
+          <Button
+            disabled={isSimulating}
+            isDarkMode={isDarkMode}
+            onClick={() => setIsModalOpen(true)}
+          >
+            Add Process
+          </Button>
+          <Button
+            disabled={isSimulating}
+            isDarkMode={isDarkMode}
+            onClick={addDummyData}
+          >
+            Add Data
+          </Button>
+          <Button
+            disabled={isSimulating}
+            isDarkMode={isDarkMode}
+            onClick={resetProcesses}
+          >
+            Reset
+          </Button>
+        </ActionButtonsContainer>
+
+        <Modal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleAddProcess}
+        />
+
+        <StyledContainer isDarkMode={isDarkMode}>
+          <Header isDarkMode={isDarkMode}>Process ID</Header>
+          <Header isDarkMode={isDarkMode}>Burst Time</Header>
+          <Header isDarkMode={isDarkMode}>Memory Size</Header>
+          <Header isDarkMode={isDarkMode}>Arrival Time</Header>
+          <Header isDarkMode={isDarkMode}>Priority</Header>
+          <Header isDarkMode={isDarkMode}>Status</Header>
+        </StyledContainer>
+
+        <ProcessContainer>
+          {simulationProcesses.map((process, index) => {
+            const {
+              processId,
+              burstTime,
+              memorySize,
+              arrivalTime,
+              priority,
+              status,
+            } = process;
+            return (
+              <StyledDataContainer
+                key={index}
+                status={status}
+                isDarkMode={isDarkMode}
               >
-                {item.processId}
-              </GanttBar>
-            ))}
-          </GanttTimeline>
+                <ProcessID isDarkMode={isDarkMode}>{processId}</ProcessID>
+                <ProcessID isDarkMode={isDarkMode}>{burstTime}</ProcessID>
+                <ProcessID isDarkMode={isDarkMode}>{memorySize} MB</ProcessID>
+                <ProcessID isDarkMode={isDarkMode}>{arrivalTime}</ProcessID>
+                <ProcessID isDarkMode={isDarkMode}>{priority}</ProcessID>
+                <ProcessID isDarkMode={isDarkMode}>{status}</ProcessID>
+              </StyledDataContainer>
+            );
+          })}
+        </ProcessContainer>
 
-          <GanttTimeLabels>
-            <span>Time: 0</span>
-            <span>Time: {totalTime}</span>
-          </GanttTimeLabels>
+        {executionHistory.length > 0 && (
+          <GanttChartContainer>
+            <GanttChartHeader>
+              <QueueHeader isDarkMode={isDarkMode}>
+                Process Execution Timeline
+              </QueueHeader>
+              <span>{`Current Time: ${currentTime}`}</span>
+            </GanttChartHeader>
 
-          <GanttLegend>
-            {/* Create a unique list of processes for the legend */}
-            {[
-              ...new Map(
-                executionHistory
-                  .filter((item) => item.processId !== "Idle")
-                  .map((item) => [item.processId, item])
-              ).values(),
-            ].map((item) => (
-              <GanttLegendItem key={item.processId}>
-                <GanttLegendColor color={item.color} />
-                <span>{item.processId}</span>
+            <GanttTimeline>
+              {executionHistory.map((item, index) => (
+                <GanttBar
+                  key={`${item.processId}-${item.startTime}`}
+                  color={item.color}
+                  data-time={item.startTime}
+                  duration={item.endTime - item.startTime}
+                  title={`${item.processId} (Time: ${item.startTime}-${item.endTime})`}
+                  widthPercentage={timeScale}
+                >
+                  {item.processId}
+                </GanttBar>
+              ))}
+            </GanttTimeline>
+
+            <GanttTimeLabels>
+              <span>Time: 0</span>
+              <span>Time: {totalTime}</span>
+            </GanttTimeLabels>
+
+            <GanttLegend>
+              {/* Create a unique list of processes for the legend */}
+              {[
+                ...new Map(
+                  executionHistory
+                    .filter((item) => item.processId !== "Idle")
+                    .map((item) => [item.processId, item])
+                ).values(),
+              ].map((item) => (
+                <GanttLegendItem key={item.processId}>
+                  <GanttLegendColor color={item.color} />
+                  <span>{item.processId}</span>
+                </GanttLegendItem>
+              ))}
+              <GanttLegendItem>
+                <GanttLegendColor color="#45475a" />
+                <span>Idle</span>
               </GanttLegendItem>
-            ))}
-            <GanttLegendItem>
-              <GanttLegendColor color="#45475a" />
-              <span>Idle</span>
-            </GanttLegendItem>
-          </GanttLegend>
-        </GanttChartContainer>
-      )}
-
-      <MainMemoryContainer isDarkMode={isDarkMode}>
-        <QueueHeader isDarkMode={isDarkMode}>
-          Main Memory
-          <span>
-            {readyQueue.reduce((acc, process) => acc + process.memorySize, 0)} /
-            1024 MB
-          </span>
-        </QueueHeader>
-        <MemoryUsage>
-          <MemoryUsageFill percentage={memoryUsagePercentage} />
-        </MemoryUsage>
-        {readyQueue.map((process, index) => (
-          <MemorySegment key={index} color={process.color}>
-            <span>{process.processId}</span>
-            <span>{process.memorySize} MB</span>
-          </MemorySegment>
-        ))}
-      </MainMemoryContainer>
-
-      <QueueContainer isDarkMode={isDarkMode}>
-        <QueueHeader isDarkMode={isDarkMode}>Ready Queue</QueueHeader>
-        {readyQueue.length === 0 ? (
-          <div style={{ color: "#7f849c", padding: "0.5rem 0" }}>
-            No processes in ready queue
-          </div>
-        ) : (
-          readyQueue.map((process, index) => (
-            <StyledDataContainer
-              key={index}
-              status={process.status}
-              isDarkMode={isDarkMode}
-            >
-              <ProcessID isDarkMode={isDarkMode}>{process.processId}</ProcessID>
-              <ProcessID isDarkMode={isDarkMode}>{process.burstTime}</ProcessID>
-              <ProcessID isDarkMode={isDarkMode}>
-                {process.memorySize} MB
-              </ProcessID>
-              <ProcessID isDarkMode={isDarkMode}>
-                {process.arrivalTime}
-              </ProcessID>
-              <ProcessID isDarkMode={isDarkMode}>{process.priority}</ProcessID>
-              <ProcessID isDarkMode={isDarkMode}>{process.status}</ProcessID>
-            </StyledDataContainer>
-          ))
+            </GanttLegend>
+          </GanttChartContainer>
         )}
-      </QueueContainer>
 
-      <QueueContainer isDarkMode={isDarkMode}>
-        <QueueHeader isDarkMode={isDarkMode}>Job Queue</QueueHeader>
-        {jobQueue.length === 0 ? (
-          <div style={{ color: "#7f849c", padding: "0.5rem 0" }}>
-            No processes in job queue
-          </div>
-        ) : (
-          jobQueue.map((process, index) => (
-            <StyledDataContainer
-              key={index}
-              status={process.status}
+        <MainMemoryContainer isDarkMode={isDarkMode}>
+          <QueueHeader isDarkMode={isDarkMode}>
+            Main Memory
+            <span>
+              {readyQueue.reduce((acc, process) => acc + process.memorySize, 0)}{" "}
+              / 1024 MB
+            </span>
+          </QueueHeader>
+          <MemoryUsage>
+            <MemoryUsageFill percentage={memoryUsagePercentage} />
+          </MemoryUsage>
+          {readyQueue.map((process, index) => (
+            <MemorySegment key={index} color={process.color}>
+              <span>{process.processId}</span>
+              <span>{process.memorySize} MB</span>
+            </MemorySegment>
+          ))}
+        </MainMemoryContainer>
+
+        <QueueContainer isDarkMode={isDarkMode}>
+          <QueueHeader isDarkMode={isDarkMode}>Ready Queue</QueueHeader>
+          {readyQueue.length === 0 ? (
+            <div style={{ color: "#7f849c", padding: "0.5rem 0" }}>
+              No processes in ready queue
+            </div>
+          ) : (
+            readyQueue.map((process, index) => (
+              <StyledDataContainer
+                key={index}
+                status={process.status}
+                isDarkMode={isDarkMode}
+              >
+                <ProcessID isDarkMode={isDarkMode}>
+                  {process.processId}
+                </ProcessID>
+                <ProcessID isDarkMode={isDarkMode}>
+                  {process.burstTime}
+                </ProcessID>
+                <ProcessID isDarkMode={isDarkMode}>
+                  {process.memorySize} MB
+                </ProcessID>
+                <ProcessID isDarkMode={isDarkMode}>
+                  {process.arrivalTime}
+                </ProcessID>
+                <ProcessID isDarkMode={isDarkMode}>
+                  {process.priority}
+                </ProcessID>
+                <ProcessID isDarkMode={isDarkMode}>{process.status}</ProcessID>
+              </StyledDataContainer>
+            ))
+          )}
+        </QueueContainer>
+
+        <QueueContainer isDarkMode={isDarkMode}>
+          <QueueHeader isDarkMode={isDarkMode}>Job Queue</QueueHeader>
+          {jobQueue.length === 0 ? (
+            <div style={{ color: "#7f849c", padding: "0.5rem 0" }}>
+              No processes in job queue
+            </div>
+          ) : (
+            jobQueue.map((process, index) => (
+              <StyledDataContainer
+                key={index}
+                status={process.status}
+                isDarkMode={isDarkMode}
+              >
+                <ProcessID isDarkMode={isDarkMode}>
+                  {process.processId}
+                </ProcessID>
+                <ProcessID isDarkMode={isDarkMode}>
+                  {process.burstTime}
+                </ProcessID>
+                <ProcessID isDarkMode={isDarkMode}>
+                  {process.memorySize} MB
+                </ProcessID>
+                <ProcessID isDarkMode={isDarkMode}>
+                  {process.arrivalTime}
+                </ProcessID>
+                <ProcessID isDarkMode={isDarkMode}>
+                  {process.priority}
+                </ProcessID>
+                <ProcessID isDarkMode={isDarkMode}>{process.status}</ProcessID>
+              </StyledDataContainer>
+            ))
+          )}
+        </QueueContainer>
+      </TabContent>
+
+      <TabContent isVisible={activeTab === "replacement"}>
+        <AlgorithmContainer isDarkMode={isDarkMode}>
+          <AlgorithmTitle isDarkMode={isDarkMode}>
+            Page Replacement Algorithms
+          </AlgorithmTitle>
+          <StyledSelector>
+            <Button
+              disabled={isSimulating}
               isDarkMode={isDarkMode}
+              onClick={() => simulatePageReplacement("FIFO")}
             >
-              <ProcessID isDarkMode={isDarkMode}>{process.processId}</ProcessID>
-              <ProcessID isDarkMode={isDarkMode}>{process.burstTime}</ProcessID>
-              <ProcessID isDarkMode={isDarkMode}>
-                {process.memorySize} MB
-              </ProcessID>
-              <ProcessID isDarkMode={isDarkMode}>
-                {process.arrivalTime}
-              </ProcessID>
-              <ProcessID isDarkMode={isDarkMode}>{process.priority}</ProcessID>
-              <ProcessID isDarkMode={isDarkMode}>{process.status}</ProcessID>
-            </StyledDataContainer>
-          ))
+              FIFO
+            </Button>
+            <Button
+              disabled={isSimulating}
+              isDarkMode={isDarkMode}
+              onClick={() => simulatePageReplacement("LRU")}
+            >
+              LRU
+            </Button>
+            <Button
+              disabled={isSimulating}
+              isDarkMode={isDarkMode}
+              onClick={() => simulatePageReplacement("Optimal")}
+            >
+              Optimal
+            </Button>
+            <Button
+              disabled={isSimulating}
+              isDarkMode={isDarkMode}
+              onClick={() => simulatePageReplacement("Clock")}
+            >
+              Clock
+            </Button>
+          </StyledSelector>
+        </AlgorithmContainer>
+
+        <AlgorithmContainer isDarkMode={isDarkMode}>
+          <AlgorithmTitle isDarkMode={isDarkMode}>Configuration</AlgorithmTitle>
+          <ConfigContainer>
+            <ConfigSection>
+              <ConfigLabel isDarkMode={isDarkMode}>
+                Page Reference String:
+              </ConfigLabel>
+              <ReferenceStringInput
+                isDarkMode={isDarkMode}
+                value={pageReferenceString}
+                onChange={(e) => setPageReferenceString(e.target.value)}
+                placeholder="e.g., 7,0,1,2,0,3,0,4,2,3,0,3,2,1,2,0,1,7,0,1"
+                disabled={isSimulating}
+              />
+            </ConfigSection>
+            <ConfigSection>
+              <ConfigLabel isDarkMode={isDarkMode}>
+                Number of Frames:
+              </ConfigLabel>
+              <FrameInput
+                isDarkMode={isDarkMode}
+                type="number"
+                min="1"
+                max="10"
+                value={numberOfFrames}
+                onChange={(e) =>
+                  setNumberOfFrames(parseInt(e.target.value) || 3)
+                }
+                disabled={isSimulating}
+              />
+            </ConfigSection>
+            <ActionButtonsContainer>
+              <Button
+                disabled={isSimulating}
+                isDarkMode={isDarkMode}
+                onClick={generateRandomReferenceString}
+              >
+                Generate Random
+              </Button>
+              <Button
+                disabled={isSimulating}
+                isDarkMode={isDarkMode}
+                onClick={resetPageReplacement}
+              >
+                Reset
+              </Button>
+            </ActionButtonsContainer>
+          </ConfigContainer>
+        </AlgorithmContainer>
+
+        {pageReplacementHistory.length > 0 && (
+          <AlgorithmContainer isDarkMode={isDarkMode}>
+            <AlgorithmTitle isDarkMode={isDarkMode}>
+              Simulation Results - {currentAlgorithm}
+            </AlgorithmTitle>
+            <ResultsContainer>
+              <ResultsSummary isDarkMode={isDarkMode}>
+                <SummaryItem>
+                  <SummaryLabel>Total Page Faults:</SummaryLabel>
+                  <SummaryValue>{pageFaults}</SummaryValue>
+                </SummaryItem>
+                <SummaryItem>
+                  <SummaryLabel>Hit Rate:</SummaryLabel>
+                  <SummaryValue>
+                    {(
+                      ((pageReferences.length - pageFaults) /
+                        pageReferences.length) *
+                      100
+                    ).toFixed(1)}
+                    %
+                  </SummaryValue>
+                </SummaryItem>
+                <SummaryItem>
+                  <SummaryLabel>Miss Rate:</SummaryLabel>
+                  <SummaryValue>
+                    {((pageFaults / pageReferences.length) * 100).toFixed(1)}%
+                  </SummaryValue>
+                </SummaryItem>
+              </ResultsSummary>
+            </ResultsContainer>
+          </AlgorithmContainer>
         )}
-      </QueueContainer>
+
+        {pageReplacementHistory.length > 0 && (
+          <AlgorithmContainer isDarkMode={isDarkMode}>
+            <AlgorithmTitle isDarkMode={isDarkMode}>
+              Frame State Timeline
+            </AlgorithmTitle>
+            <TimelineContainer
+              style={{ "--frame-count": numberOfFrames } as React.CSSProperties}
+            >
+              <TimelineHeader isDarkMode={isDarkMode}>
+                <TimelineCell isDarkMode={isDarkMode}>Step</TimelineCell>
+                <TimelineCell isDarkMode={isDarkMode}>Page</TimelineCell>
+                {Array.from({ length: numberOfFrames }, (_, i) => (
+                  <TimelineCell key={i} isDarkMode={isDarkMode}>
+                    Frame {i + 1}
+                  </TimelineCell>
+                ))}
+                <TimelineCell isDarkMode={isDarkMode}>Status</TimelineCell>
+              </TimelineHeader>
+              <TimelineBody>
+                {pageReplacementHistory.map((step, index) => (
+                  <TimelineRow
+                    key={index}
+                    isDarkMode={isDarkMode}
+                    isFault={step.isFault}
+                  >
+                    <TimelineCell isDarkMode={isDarkMode}>
+                      {index + 1}
+                    </TimelineCell>
+                    <TimelineCell isDarkMode={isDarkMode}>
+                      {step.page}
+                    </TimelineCell>
+                    {Array.from({ length: numberOfFrames }, (_, i) => (
+                      <FrameCell
+                        key={i}
+                        isDarkMode={isDarkMode}
+                        isNew={step.newFrameIndex === i}
+                      >
+                        {step.frames[i] !== undefined ? step.frames[i] : "-"}
+                      </FrameCell>
+                    ))}
+                    <StatusCell isDarkMode={isDarkMode} isFault={step.isFault}>
+                      {step.isFault ? "FAULT" : "HIT"}
+                    </StatusCell>
+                  </TimelineRow>
+                ))}
+              </TimelineBody>
+            </TimelineContainer>
+          </AlgorithmContainer>
+        )}
+      </TabContent>
     </StyledMarked>
   );
 };
