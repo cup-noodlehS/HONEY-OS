@@ -5,6 +5,7 @@ import styled from "styled-components";
 
 import useFile from "components/system/Files/FileEntry/useFile";
 import { useTheme } from "contexts/ThemeContext";
+import AlgorithmInfo from "./AlgorithmInfo";
 import Modal from "./modal";
 import type { SimulationProcess } from "./type";
 
@@ -46,11 +47,11 @@ const Tab = styled.button<{ isActive: boolean; isDarkMode: boolean }>`
 
   &:hover {
     background-color: ${({ isActive, isDarkMode }) =>
-      isActive
-        ? isDarkMode
-          ? "#89b4fa"
-          : "#5c7cfa"
-        : isDarkMode
+    isActive
+      ? isDarkMode
+        ? "#89b4fa"
+        : "#5c7cfa"
+      : isDarkMode
         ? "#45475a"
         : "#e9ecef"};
   }
@@ -103,8 +104,8 @@ const Button = styled.button<{ disabled: boolean; isDarkMode?: boolean }>`
         ? "#45475a"
         : "#d0d0d8"
       : isDarkMode
-      ? "#89b4fa"
-      : "#5c7cfa"};
+        ? "#89b4fa"
+        : "#5c7cfa"};
   font-weight: 600;
   padding: 0.6rem 1.2rem;
   border: none;
@@ -118,11 +119,11 @@ const Button = styled.button<{ disabled: boolean; isDarkMode?: boolean }>`
 
   &:hover {
     background-color: ${({ disabled, isDarkMode = true }) =>
-      disabled
-        ? isDarkMode
-          ? "#45475a"
-          : "#d0d0d8"
-        : isDarkMode
+    disabled
+      ? isDarkMode
+        ? "#45475a"
+        : "#d0d0d8"
+      : isDarkMode
         ? "#74c7ec"
         : "#4c6ef5"};
     transform: ${({ disabled }) => (disabled ? "none" : "translateY(-2px)")};
@@ -204,7 +205,7 @@ const getStatusColor = (status: string, isDarkMode: boolean) => {
   }
 };
 
-const StyledDataContainer = styled.div<{ status: string; isDarkMode: boolean }>`
+const StyledDataContainer = styled.div<{ isDarkMode: boolean; status: string }>`
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   background-color: ${({ isDarkMode }) => (isDarkMode ? "#181825" : "#f1f3f5")};
@@ -217,7 +218,7 @@ const StyledDataContainer = styled.div<{ status: string; isDarkMode: boolean }>`
   &:hover {
     transform: translateX(2px);
     background-color: ${({ isDarkMode }) =>
-      isDarkMode ? "#1e1e2e" : "#e9ecef"};
+    isDarkMode ? "#1e1e2e" : "#e9ecef"};
   }
 `;
 
@@ -437,26 +438,26 @@ interface GanttItem {
 }
 
 interface PageReplacementStep {
-  page: number;
   frames: (number | undefined)[];
   isFault: boolean;
   newFrameIndex?: number;
+  page: number;
 }
 
 interface MemoryBlock {
+  color?: string;
+  endAddress: number;
   id: string;
-  size: number;
   isAllocated: boolean;
   processId?: string;
-  color?: string;
+  size: number;
   startAddress: number;
-  endAddress: number;
 }
 
 interface AllocationRequest {
+  color: string;
   processId: string;
   size: number;
-  color: string;
 }
 
 const ThemeToggleButton = styled.button<{ isDarkMode: boolean }>`
@@ -479,7 +480,7 @@ const ThemeToggleButton = styled.button<{ isDarkMode: boolean }>`
 
   &:hover {
     background-color: ${({ isDarkMode }) =>
-      isDarkMode ? "#585b70" : "#dee2e6"};
+    isDarkMode ? "#585b70" : "#dee2e6"};
     transform: translateY(-2px);
   }
 
@@ -608,15 +609,15 @@ const TimelineRow = styled.div<{ isDarkMode: boolean; isFault: boolean }>`
         ? "#f38ba8"
         : "#ffe0e0"
       : isDarkMode
-      ? "#181825"
-      : "#f9f9f9"};
+        ? "#181825"
+        : "#f9f9f9"};
   border-bottom: 1px solid
     ${({ isDarkMode }) => (isDarkMode ? "#45475a" : "#e9ecef")};
   transition: background-color 0.2s ease;
 
   &:hover {
     background-color: ${({ isDarkMode }) =>
-      isDarkMode ? "#1e1e2e" : "#f0f0f0"};
+    isDarkMode ? "#1e1e2e" : "#f0f0f0"};
   }
 `;
 
@@ -629,7 +630,7 @@ const TimelineCell = styled.div<{ isDarkMode: boolean }>`
     ${({ isDarkMode }) => (isDarkMode ? "#45475a" : "#e9ecef")};
 `;
 
-const FrameCell = styled(TimelineCell)<{ isNew: boolean }>`
+const FrameCell = styled(TimelineCell) <{ isNew: boolean }>`
   font-weight: ${({ isNew }) => (isNew ? "600" : "normal")};
   background-color: ${({ isNew, isDarkMode }) =>
     isNew ? (isDarkMode ? "#a6e3a1" : "#d4edda") : "transparent"};
@@ -639,11 +640,11 @@ const FrameCell = styled(TimelineCell)<{ isNew: boolean }>`
         ? "#000000"
         : "#155724"
       : isDarkMode
-      ? "#cdd6f4"
-      : "#333344"};
+        ? "#cdd6f4"
+        : "#333344"};
 `;
 
-const StatusCell = styled(TimelineCell)<{ isFault: boolean }>`
+const StatusCell = styled(TimelineCell) <{ isFault: boolean }>`
   font-weight: 600;
   color: ${({ isFault, isDarkMode }) =>
     isFault
@@ -651,8 +652,8 @@ const StatusCell = styled(TimelineCell)<{ isFault: boolean }>`
         ? "#f38ba8"
         : "#dc3545"
       : isDarkMode
-      ? "#a6e3a1"
-      : "#28a745"};
+        ? "#a6e3a1"
+        : "#28a745"};
 `;
 
 // Memory Placement Algorithm Styled Components
@@ -668,16 +669,16 @@ const MemoryVisualization = styled.div<{ isDarkMode: boolean }>`
 
 const MemoryBlockDiv = styled.div<{
   color?: string;
+  height: number;
   isAllocated: boolean;
   isDarkMode: boolean;
-  height: number;
 }>`
   background-color: ${({ color, isAllocated, isDarkMode }) =>
     isAllocated
       ? color || (isDarkMode ? "#89b4fa" : "#5c7cfa")
       : isDarkMode
-      ? "#45475a"
-      : "#e9ecef"};
+        ? "#45475a"
+        : "#e9ecef"};
   border: 1px solid ${({ isDarkMode }) => (isDarkMode ? "#6c7086" : "#adb5bd")};
   height: ${({ height }) => height}px;
   display: flex;
@@ -757,7 +758,7 @@ const ProcessList = styled.div<{ isDarkMode: boolean }>`
   background-color: ${({ isDarkMode }) => (isDarkMode ? "#181825" : "#ffffff")};
 `;
 
-const ProcessItem = styled.div<{ isDarkMode: boolean; color: string }>`
+const ProcessItem = styled.div<{ color: string; isDarkMode: boolean }>`
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -795,7 +796,7 @@ const DeallocateButton = styled.button<{ isDarkMode: boolean }>`
 
   &:hover {
     background-color: ${({ isDarkMode }) =>
-      isDarkMode ? "#f2d5d5" : "#c82333"};
+    isDarkMode ? "#f2d5d5" : "#c82333"};
   }
 `;
 
@@ -839,6 +840,7 @@ const Marked: FC = () => {
   >([]);
   const [placementAlgorithm, setPlacementAlgorithm] = useState("");
   const [nextFitPointer, setNextFitPointer] = useState(0);
+  const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>("");
 
   const handleAddProcess = (process: SimulationProcess) => {
     setSimulationProcesses((prevProcesses) => [...prevProcesses, process]);
@@ -952,13 +954,18 @@ const Marked: FC = () => {
   };
 
   const resetProcesses = () => {
+    setSelectedAlgorithm("");
     setSimulationProcesses([]);
+    setGanttData([]);
+    setAverageWaitingTime(0);
+    setAverageTurnaroundTime(0);
+    setAverageResponseTime(0);
     setCurrentTime(0);
-    setMemoryUsage(0);
-    setExecutionHistory([]);
+    setIsSimulating(false);
   };
 
   const simulateFCFS = () => {
+    setSelectedAlgorithm("FCFS");
     const sortedProcesses = [...simulationProcesses].sort(
       (a, b) => a.arrivalTime - b.arrivalTime
     );
@@ -989,7 +996,7 @@ const Marked: FC = () => {
           console.log("Process Memory is:", process.memorySize);
           process.status =
             currentMemoryUsage + process.memorySize > 1024 ||
-            jobQueue.length > 0
+              jobQueue.length > 0
               ? "Waiting for Memory"
               : "Ready";
 
@@ -1115,6 +1122,7 @@ const Marked: FC = () => {
   };
 
   const simulateSJF = () => {
+    setSelectedAlgorithm("SJF");
     const sortedProcesses = [...simulationProcesses].sort(
       (a, b) => a.arrivalTime - b.arrivalTime
     );
@@ -1150,7 +1158,7 @@ const Marked: FC = () => {
           console.log("Process Memory is:", process.memorySize);
           process.status =
             currentMemoryUsage + process.memorySize > 1024 ||
-            jobQueue.length > 0
+              jobQueue.length > 0
               ? "Waiting for Memory"
               : "Ready";
 
@@ -1271,6 +1279,7 @@ const Marked: FC = () => {
   };
 
   const simulateSRTF = () => {
+    setSelectedAlgorithm("SRTF");
     const sortedProcesses = [...simulationProcesses].sort(
       (a, b) => a.arrivalTime - b.arrivalTime
     );
@@ -1303,7 +1312,7 @@ const Marked: FC = () => {
         if (process.status === "Not Ready" && process.arrivalTime === time) {
           process.status =
             currentMemoryUsage + process.memorySize > 1024 ||
-            jobQueue.length > 0
+              jobQueue.length > 0
               ? "Waiting for Memory"
               : "Ready";
 
@@ -1433,6 +1442,7 @@ const Marked: FC = () => {
   };
 
   const simulatePriority = () => {
+    setSelectedAlgorithm("Priority");
     const sortedProcesses = [...simulationProcesses].sort(
       (a, b) => a.arrivalTime - b.arrivalTime
     );
@@ -1463,7 +1473,7 @@ const Marked: FC = () => {
           console.log("Process Memory is:", process.memorySize);
           process.status =
             currentMemoryUsage + process.memorySize > 1024 ||
-            jobQueue.length > 0
+              jobQueue.length > 0
               ? "Waiting for Memory"
               : "Ready";
 
@@ -1581,6 +1591,7 @@ const Marked: FC = () => {
   };
 
   const simulateRoundRobin = (quantum = 4) => {
+    setSelectedAlgorithm("RR");
     const sortedProcesses = [...simulationProcesses].sort(
       (a, b) => a.arrivalTime - b.arrivalTime
     );
@@ -1616,7 +1627,7 @@ const Marked: FC = () => {
           console.log("Process Memory is:", process.memorySize);
           process.status =
             currentMemoryUsage + process.memorySize > 1024 ||
-            jobQueue.length > 0
+              jobQueue.length > 0
               ? "Waiting for Memory"
               : "Ready";
 
@@ -1747,6 +1758,7 @@ const Marked: FC = () => {
   };
 
   const simulateMultiLevelQueue = () => {
+    setSelectedAlgorithm("MLQ");
     const sortedProcesses = [...simulationProcesses].sort(
       (a, b) => a.arrivalTime - b.arrivalTime
     );
@@ -1789,7 +1801,7 @@ const Marked: FC = () => {
         if (process.status === "Not Ready" && process.arrivalTime === time) {
           process.status =
             currentMemoryUsage + process.memorySize > 1024 ||
-            jobQueue.length > 0
+              jobQueue.length > 0
               ? "Waiting for Memory"
               : "Ready";
 
@@ -2002,6 +2014,7 @@ const Marked: FC = () => {
   };
 
   const simulateMultiLevelFeedbackQueue = () => {
+    setSelectedAlgorithm("MLFQ");
     const sortedProcesses = [...simulationProcesses].sort(
       (a, b) => a.arrivalTime - b.arrivalTime
     );
@@ -2040,7 +2053,7 @@ const Marked: FC = () => {
         if (process.status === "Not Ready" && process.arrivalTime === time) {
           process.status =
             currentMemoryUsage + process.memorySize > 1024 ||
-            jobQueue.length > 0
+              jobQueue.length > 0
               ? "Waiting for Memory"
               : "Ready";
 
@@ -2190,6 +2203,7 @@ const Marked: FC = () => {
   };
 
   const simulateLotteryScheduling = () => {
+    setSelectedAlgorithm("Lottery");
     const sortedProcesses = [...simulationProcesses].sort(
       (a, b) => a.arrivalTime - b.arrivalTime
     );
@@ -2226,7 +2240,7 @@ const Marked: FC = () => {
         if (process.status === "Not Ready" && process.arrivalTime === time) {
           process.status =
             currentMemoryUsage + process.memorySize > 1024 ||
-            jobQueue.length > 0
+              jobQueue.length > 0
               ? "Waiting for Memory"
               : "Ready";
 
@@ -2392,7 +2406,7 @@ const Marked: FC = () => {
   const parseReferenceString = (refString: string): number[] => {
     return refString
       .split(",")
-      .map((s) => parseInt(s.trim()))
+      .map((s) => Number.parseInt(s.trim()))
       .filter((n) => !isNaN(n));
   };
 
@@ -2423,14 +2437,12 @@ const Marked: FC = () => {
     setCurrentAlgorithm(algorithm);
     setIsSimulating(true);
 
-    let frames: (number | undefined)[] = new Array(numberOfFrames).fill(
-      undefined
-    );
+    const frames: (number | undefined)[] = new Array(numberOfFrames).fill();
     let faults = 0;
     const history: PageReplacementStep[] = [];
     let accessOrder: number[] = []; // For LRU
     let clockPointer = 0; // For Clock algorithm
-    let referenceBits: boolean[] = new Array(numberOfFrames).fill(false); // For Clock
+    const referenceBits: boolean[] = new Array(numberOfFrames).fill(false); // For Clock
 
     const interval = setInterval(() => {
       if (history.length >= references.length) {
@@ -2446,33 +2458,15 @@ const Marked: FC = () => {
       // Check if page is already in frames
       const pageIndex = frames.indexOf(currentPage);
 
-      if (pageIndex !== -1) {
-        // Page hit
-        if (algorithm === "LRU") {
-          // Update access order for LRU
-          accessOrder = accessOrder.filter((p) => p !== currentPage);
-          accessOrder.push(currentPage);
-        } else if (algorithm === "Clock") {
-          // Set reference bit for Clock
-          referenceBits[pageIndex] = true;
-        }
-      } else {
+      if (pageIndex === -1) {
         // Page fault
         isFault = true;
         faults++;
 
         // Find empty frame first
-        const emptyIndex = frames.indexOf(undefined);
+        const emptyIndex = frames.indexOf();
 
-        if (emptyIndex !== -1) {
-          // Use empty frame
-          frames[emptyIndex] = currentPage;
-          newFrameIndex = emptyIndex;
-
-          if (algorithm === "LRU") {
-            accessOrder.push(currentPage);
-          }
-        } else {
+        if (emptyIndex === -1) {
           // Need to replace a page
           let replaceIndex = 0;
 
@@ -2495,8 +2489,7 @@ const Marked: FC = () => {
               let farthestIndex = -1;
               let farthestDistance = -1;
 
-              for (let i = 0; i < frames.length; i++) {
-                const page = frames[i];
+              for (const [i, page] of frames.entries()) {
                 let nextUse = references.length; // Default to never used again
 
                 for (let j = history.length + 1; j < references.length; j++) {
@@ -2531,15 +2524,33 @@ const Marked: FC = () => {
 
           frames[replaceIndex] = currentPage;
           newFrameIndex = replaceIndex;
+        } else {
+          // Use empty frame
+          frames[emptyIndex] = currentPage;
+          newFrameIndex = emptyIndex;
+
+          if (algorithm === "LRU") {
+            accessOrder.push(currentPage);
+          }
+        }
+      } else {
+        // Page hit
+        if (algorithm === "LRU") {
+          // Update access order for LRU
+          accessOrder = accessOrder.filter((p) => p !== currentPage);
+          accessOrder.push(currentPage);
+        } else if (algorithm === "Clock") {
+          // Set reference bit for Clock
+          referenceBits[pageIndex] = true;
         }
       }
 
       // Record the step
       history.push({
-        page: currentPage,
         frames: [...frames],
         isFault,
         newFrameIndex,
+        page: currentPage,
       });
 
       setPageReplacementHistory([...history]);
@@ -2550,11 +2561,11 @@ const Marked: FC = () => {
   // Memory Placement Algorithm Functions
   const initializeMemory = () => {
     const initialBlock: MemoryBlock = {
-      id: "initial",
-      size: totalMemorySize,
-      isAllocated: false,
-      startAddress: 0,
       endAddress: totalMemorySize - 1,
+      id: "initial",
+      isAllocated: false,
+      size: totalMemorySize,
+      startAddress: 0,
     };
     setMemoryBlocks([initialBlock]);
     setAllocatedProcesses([]);
@@ -2595,14 +2606,12 @@ const Marked: FC = () => {
     const color = generateRandomColors();
     let blockIndex = -1;
     let bestFitIndex = -1;
-    let bestFitSize = Infinity;
+    let bestFitSize = Number.POSITIVE_INFINITY;
     let worstFitIndex = -1;
     let worstFitSize = -1;
 
     // Find suitable block based on algorithm
-    for (let i = 0; i < memoryBlocks.length; i++) {
-      const block = memoryBlocks[i];
-
+    for (const [i, block] of memoryBlocks.entries()) {
       if (!block.isAllocated && block.size >= size) {
         switch (algorithm) {
           case "First Fit":
@@ -2661,35 +2670,35 @@ const Marked: FC = () => {
       // Exact fit
       newBlocks[blockIndex] = {
         ...selectedBlock,
+        color,
         isAllocated: true,
         processId,
-        color,
       };
     } else {
       // Split the block
       const allocatedBlock: MemoryBlock = {
+        color,
+        endAddress: selectedBlock.startAddress + size - 1,
         id: `${processId}-${Date.now()}`,
-        size,
         isAllocated: true,
         processId,
-        color,
+        size,
         startAddress: selectedBlock.startAddress,
-        endAddress: selectedBlock.startAddress + size - 1,
       };
 
       const remainingBlock: MemoryBlock = {
-        id: `free-${Date.now()}`,
-        size: selectedBlock.size - size,
-        isAllocated: false,
-        startAddress: selectedBlock.startAddress + size,
         endAddress: selectedBlock.endAddress,
+        id: `free-${Date.now()}`,
+        isAllocated: false,
+        size: selectedBlock.size - size,
+        startAddress: selectedBlock.startAddress + size,
       };
 
       newBlocks.splice(blockIndex, 1, allocatedBlock, remainingBlock);
     }
 
     setMemoryBlocks(newBlocks);
-    setAllocatedProcesses((prev) => [...prev, { processId, size, color }]);
+    setAllocatedProcesses((prev) => [...prev, { color, processId, size }]);
     return true;
   };
 
@@ -2697,25 +2706,23 @@ const Marked: FC = () => {
     const newBlocks = memoryBlocks.map((block) =>
       block.processId === processId
         ? {
-            ...block,
-            isAllocated: false,
-            processId: undefined,
-            color: undefined,
-          }
+          ...block,
+          color: undefined,
+          isAllocated: false,
+          processId: undefined,
+        }
         : block
     );
 
     // Merge adjacent free blocks
     const mergedBlocks: MemoryBlock[] = [];
-    for (let i = 0; i < newBlocks.length; i++) {
-      const currentBlock = newBlocks[i];
-
+    for (const currentBlock of newBlocks) {
       if (
         !currentBlock.isAllocated &&
         mergedBlocks.length > 0 &&
         !mergedBlocks[mergedBlocks.length - 1].isAllocated &&
         mergedBlocks[mergedBlocks.length - 1].endAddress + 1 ===
-          currentBlock.startAddress
+        currentBlock.startAddress
       ) {
         // Merge with previous block
         const lastBlock = mergedBlocks[mergedBlocks.length - 1];
@@ -2768,12 +2775,17 @@ const Marked: FC = () => {
   // Calculate time scale for Gantt chart
   const timeScale = totalTime > 0 ? 100 / totalTime : 0;
 
+  const handleAlgorithmSelection = (algorithm: string) => {
+    setSelectedAlgorithm(algorithm);
+    // Add any existing algorithm selection logic here
+  };
+
   return (
     <StyledMarked isDarkMode={isDarkMode}>
       <ThemeToggleButton
+        aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
         isDarkMode={isDarkMode}
         onClick={toggleTheme}
-        aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
       >
         {isDarkMode ? "☀️" : "🌙"}
       </ThemeToggleButton>
@@ -2867,6 +2879,13 @@ const Marked: FC = () => {
               Lottery
             </Button>
           </StyledSelector>
+
+          {selectedAlgorithm && (
+            <AlgorithmInfo
+              algorithm={selectedAlgorithm}
+              isDarkMode={isDarkMode}
+            />
+          )}
         </AlgorithmContainer>
 
         <AlgorithmContainer isDarkMode={isDarkMode}>
@@ -2930,8 +2949,8 @@ const Marked: FC = () => {
             return (
               <StyledDataContainer
                 key={index}
-                status={status}
                 isDarkMode={isDarkMode}
+                status={status}
               >
                 <ProcessID isDarkMode={isDarkMode}>{processId}</ProcessID>
                 <ProcessID isDarkMode={isDarkMode}>{burstTime}</ProcessID>
@@ -3024,8 +3043,8 @@ const Marked: FC = () => {
             readyQueue.map((process, index) => (
               <StyledDataContainer
                 key={index}
-                status={process.status}
                 isDarkMode={isDarkMode}
+                status={process.status}
               >
                 <ProcessID isDarkMode={isDarkMode}>
                   {process.processId}
@@ -3058,8 +3077,8 @@ const Marked: FC = () => {
             jobQueue.map((process, index) => (
               <StyledDataContainer
                 key={index}
-                status={process.status}
                 isDarkMode={isDarkMode}
+                status={process.status}
               >
                 <ProcessID isDarkMode={isDarkMode}>
                   {process.processId}
@@ -3128,11 +3147,11 @@ const Marked: FC = () => {
                 Page Reference String:
               </ConfigLabel>
               <ReferenceStringInput
+                disabled={isSimulating}
                 isDarkMode={isDarkMode}
-                value={pageReferenceString}
                 onChange={(e) => setPageReferenceString(e.target.value)}
                 placeholder="e.g., 7,0,1,2,0,3,0,4,2,3,0,3,2,1,2,0,1,7,0,1"
-                disabled={isSimulating}
+                value={pageReferenceString}
               />
             </ConfigSection>
             <ConfigSection>
@@ -3140,15 +3159,15 @@ const Marked: FC = () => {
                 Number of Frames:
               </ConfigLabel>
               <FrameInput
-                isDarkMode={isDarkMode}
-                type="number"
-                min="1"
-                max="10"
-                value={numberOfFrames}
-                onChange={(e) =>
-                  setNumberOfFrames(parseInt(e.target.value) || 3)
-                }
                 disabled={isSimulating}
+                isDarkMode={isDarkMode}
+                max="10"
+                min="1"
+                onChange={(e) =>
+                  setNumberOfFrames(Number.parseInt(e.target.value) || 3)
+                }
+                type="number"
+                value={numberOfFrames}
               />
             </ConfigSection>
             <ActionButtonsContainer>
@@ -3240,7 +3259,7 @@ const Marked: FC = () => {
                         isDarkMode={isDarkMode}
                         isNew={step.newFrameIndex === i}
                       >
-                        {step.frames[i] !== undefined ? step.frames[i] : "-"}
+                        {step.frames[i] === undefined ? "-" : step.frames[i]}
                       </FrameCell>
                     ))}
                     <StatusCell isDarkMode={isDarkMode} isFault={step.isFault}>
@@ -3302,13 +3321,13 @@ const Marked: FC = () => {
               </ConfigLabel>
               <FrameInput
                 isDarkMode={isDarkMode}
-                type="number"
-                min="256"
                 max="4096"
-                value={totalMemorySize}
+                min="256"
                 onChange={(e) =>
-                  setTotalMemorySize(parseInt(e.target.value) || 1024)
+                  setTotalMemorySize(Number.parseInt(e.target.value) || 1024)
                 }
+                type="number"
+                value={totalMemorySize}
               />
             </ConfigSection>
             <ActionButtonsContainer>
@@ -3332,36 +3351,36 @@ const Marked: FC = () => {
               <div>
                 <ConfigLabel isDarkMode={isDarkMode}>Process ID:</ConfigLabel>
                 <AllocationInput
-                  isDarkMode={isDarkMode}
-                  type="text"
-                  placeholder="e.g., P1"
                   id="processId"
+                  isDarkMode={isDarkMode}
+                  placeholder="e.g., P1"
+                  type="text"
                 />
               </div>
               <div>
                 <ConfigLabel isDarkMode={isDarkMode}>Size (KB):</ConfigLabel>
                 <AllocationInput
-                  isDarkMode={isDarkMode}
-                  type="number"
-                  placeholder="e.g., 100"
                   id="processSize"
+                  isDarkMode={isDarkMode}
+                  placeholder="e.g., 100"
+                  type="number"
                 />
               </div>
-              <div></div>
+              <div />
               <Button
                 disabled={false}
                 isDarkMode={isDarkMode}
                 onClick={() => {
-                  const processIdInput = document.getElementById(
-                    "processId"
+                  const processIdInput = document.querySelector(
+                    "#processId"
                   ) as HTMLInputElement;
-                  const processSizeInput = document.getElementById(
-                    "processSize"
+                  const processSizeInput = document.querySelector(
+                    "#processSize"
                   ) as HTMLInputElement;
 
                   if (processIdInput && processSizeInput) {
                     const processId = processIdInput.value.trim();
-                    const size = parseInt(processSizeInput.value);
+                    const size = Number.parseInt(processSizeInput.value);
 
                     if (processId && size > 0) {
                       const success = allocateMemory(
@@ -3433,12 +3452,11 @@ const Marked: FC = () => {
                 <MemoryBlockDiv
                   key={block.id}
                   color={block.color}
+                  height={Math.max(20, (block.size / totalMemorySize) * 250)}
                   isAllocated={block.isAllocated}
                   isDarkMode={isDarkMode}
-                  height={Math.max(20, (block.size / totalMemorySize) * 250)}
-                  title={`${block.isAllocated ? block.processId : "Free"} - ${
-                    block.size
-                  } KB (${block.startAddress}-${block.endAddress})`}
+                  title={`${block.isAllocated ? block.processId : "Free"} - ${block.size
+                    } KB (${block.startAddress}-${block.endAddress})`}
                 >
                   {block.isAllocated
                     ? `${block.processId} (${block.size}KB)`
@@ -3458,8 +3476,8 @@ const Marked: FC = () => {
               {allocatedProcesses.map((process, index) => (
                 <ProcessItem
                   key={index}
-                  isDarkMode={isDarkMode}
                   color={process.color}
+                  isDarkMode={isDarkMode}
                 >
                   <ProcessInfo>
                     <ProcessColorIndicator color={process.color} />
