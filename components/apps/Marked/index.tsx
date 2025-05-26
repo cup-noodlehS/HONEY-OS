@@ -443,6 +443,22 @@ interface PageReplacementStep {
   newFrameIndex?: number;
 }
 
+interface MemoryBlock {
+  id: string;
+  size: number;
+  isAllocated: boolean;
+  processId?: string;
+  color?: string;
+  startAddress: number;
+  endAddress: number;
+}
+
+interface AllocationRequest {
+  processId: string;
+  size: number;
+  color: string;
+}
+
 const ThemeToggleButton = styled.button<{ isDarkMode: boolean }>`
   position: absolute;
   top: 2rem;
@@ -639,14 +655,158 @@ const StatusCell = styled(TimelineCell)<{ isFault: boolean }>`
       : "#28a745"};
 `;
 
+// Memory Placement Algorithm Styled Components
+const MemoryVisualization = styled.div<{ isDarkMode: boolean }>`
+  background-color: ${({ isDarkMode }) => (isDarkMode ? "#181825" : "#f1f3f5")};
+  border: 2px solid ${({ isDarkMode }) => (isDarkMode ? "#45475a" : "#e9ecef")};
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  min-height: 300px;
+  position: relative;
+`;
+
+const MemoryBlockDiv = styled.div<{
+  color?: string;
+  isAllocated: boolean;
+  isDarkMode: boolean;
+  height: number;
+}>`
+  background-color: ${({ color, isAllocated, isDarkMode }) =>
+    isAllocated
+      ? color || (isDarkMode ? "#89b4fa" : "#5c7cfa")
+      : isDarkMode
+      ? "#45475a"
+      : "#e9ecef"};
+  border: 1px solid ${({ isDarkMode }) => (isDarkMode ? "#6c7086" : "#adb5bd")};
+  height: ${({ height }) => height}px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ isAllocated, isDarkMode }) =>
+    isAllocated ? "white" : isDarkMode ? "#cdd6f4" : "#495057"};
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  position: relative;
+  margin-bottom: 1px;
+
+  &:hover {
+    transform: ${({ isAllocated }) => (isAllocated ? "scale(1.02)" : "none")};
+    z-index: 5;
+  }
+`;
+
+const AllocationForm = styled.div<{ isDarkMode: boolean }>`
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 1rem;
+  align-items: end;
+  padding: 1rem;
+  background-color: ${({ isDarkMode }) => (isDarkMode ? "#181825" : "#f8f9fa")};
+  border-radius: 0.5rem;
+  border: 1px solid ${({ isDarkMode }) => (isDarkMode ? "#45475a" : "#e9ecef")};
+  margin-bottom: 1rem;
+`;
+
+const AllocationInput = styled.input<{ isDarkMode: boolean }>`
+  padding: 0.5rem;
+  border: 1px solid ${({ isDarkMode }) => (isDarkMode ? "#45475a" : "#e9ecef")};
+  border-radius: 0.25rem;
+  background-color: ${({ isDarkMode }) => (isDarkMode ? "#1e1e2e" : "#ffffff")};
+  color: ${({ isDarkMode }) => (isDarkMode ? "#cdd6f4" : "#333344")};
+  font-size: 0.85rem;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ isDarkMode }) => (isDarkMode ? "#89b4fa" : "#5c7cfa")};
+  }
+`;
+
+const AllocationStats = styled.div<{ isDarkMode: boolean }>`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: ${({ isDarkMode }) => (isDarkMode ? "#181825" : "#f8f9fa")};
+  border-radius: 0.5rem;
+  border: 1px solid ${({ isDarkMode }) => (isDarkMode ? "#45475a" : "#e9ecef")};
+`;
+
+const StatItem = styled.div`
+  text-align: center;
+`;
+
+const StatLabel = styled.div`
+  font-size: 0.75rem;
+  opacity: 0.8;
+  margin-bottom: 0.25rem;
+`;
+
+const StatValue = styled.div`
+  font-size: 1.25rem;
+  font-weight: 600;
+`;
+
+const ProcessList = styled.div<{ isDarkMode: boolean }>`
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid ${({ isDarkMode }) => (isDarkMode ? "#45475a" : "#e9ecef")};
+  border-radius: 0.5rem;
+  background-color: ${({ isDarkMode }) => (isDarkMode ? "#181825" : "#ffffff")};
+`;
+
+const ProcessItem = styled.div<{ isDarkMode: boolean; color: string }>`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border-bottom: 1px solid
+    ${({ isDarkMode }) => (isDarkMode ? "#45475a" : "#e9ecef")};
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const ProcessInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const ProcessColorIndicator = styled.div<{ color: string }>`
+  width: 1rem;
+  height: 1rem;
+  background-color: ${({ color }) => color};
+  border-radius: 2px;
+`;
+
+const DeallocateButton = styled.button<{ isDarkMode: boolean }>`
+  background-color: ${({ isDarkMode }) => (isDarkMode ? "#f38ba8" : "#dc3545")};
+  color: white;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: ${({ isDarkMode }) =>
+      isDarkMode ? "#f2d5d5" : "#c82333"};
+  }
+`;
+
 const Marked: FC = () => {
   const { isDarkMode, toggleTheme } = useTheme();
   const { processes = {} } = useProcesses();
   const openFile = useFile(``);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"scheduling" | "replacement">(
-    "scheduling"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "scheduling" | "replacement" | "placement"
+  >("scheduling");
   const [simulationProcesses, setSimulationProcesses] = useState<
     SimulationProcess[]
   >([]);
@@ -670,6 +830,15 @@ const Marked: FC = () => {
   const [pageFaults, setPageFaults] = useState(0);
   const [currentAlgorithm, setCurrentAlgorithm] = useState("");
   const [pageReferences, setPageReferences] = useState<number[]>([]);
+
+  // Memory Placement Algorithm States
+  const [memoryBlocks, setMemoryBlocks] = useState<MemoryBlock[]>([]);
+  const [totalMemorySize, setTotalMemorySize] = useState(1024);
+  const [allocatedProcesses, setAllocatedProcesses] = useState<
+    AllocationRequest[]
+  >([]);
+  const [placementAlgorithm, setPlacementAlgorithm] = useState("");
+  const [nextFitPointer, setNextFitPointer] = useState(0);
 
   const handleAddProcess = (process: SimulationProcess) => {
     setSimulationProcesses((prevProcesses) => [...prevProcesses, process]);
@@ -2378,6 +2547,206 @@ const Marked: FC = () => {
     }, 1000);
   };
 
+  // Memory Placement Algorithm Functions
+  const initializeMemory = () => {
+    const initialBlock: MemoryBlock = {
+      id: "initial",
+      size: totalMemorySize,
+      isAllocated: false,
+      startAddress: 0,
+      endAddress: totalMemorySize - 1,
+    };
+    setMemoryBlocks([initialBlock]);
+    setAllocatedProcesses([]);
+    setNextFitPointer(0);
+  };
+
+  const generateRandomColors = () => {
+    const colors = [
+      "#ff4c4c",
+      "#4caf50",
+      "#2196f3",
+      "#ffeb3b",
+      "#8e44ad",
+      "#3498db",
+      "#e67e22",
+      "#2ecc71",
+      "#f1c40f",
+      "#e74c3c",
+      "#9b59b6",
+      "#1abc9c",
+      "#34495e",
+      "#f39c12",
+      "#d35400",
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
+  };
+
+  const allocateMemory = (
+    processId: string,
+    size: number,
+    algorithm: string
+  ) => {
+    if (size <= 0 || size > totalMemorySize) {
+      alert("Invalid memory size");
+      return false;
+    }
+
+    const color = generateRandomColors();
+    let blockIndex = -1;
+    let bestFitIndex = -1;
+    let bestFitSize = Infinity;
+    let worstFitIndex = -1;
+    let worstFitSize = -1;
+
+    // Find suitable block based on algorithm
+    for (let i = 0; i < memoryBlocks.length; i++) {
+      const block = memoryBlocks[i];
+
+      if (!block.isAllocated && block.size >= size) {
+        switch (algorithm) {
+          case "First Fit":
+            blockIndex = i;
+            break;
+          case "Best Fit":
+            if (block.size < bestFitSize) {
+              bestFitSize = block.size;
+              bestFitIndex = i;
+            }
+            break;
+          case "Worst Fit":
+            if (block.size > worstFitSize) {
+              worstFitSize = block.size;
+              worstFitIndex = i;
+            }
+            break;
+          case "Next Fit":
+            if (i >= nextFitPointer) {
+              blockIndex = i;
+              setNextFitPointer(i);
+              break;
+            }
+            break;
+        }
+
+        if (blockIndex !== -1) break;
+      }
+    }
+
+    // For Next Fit, if no block found from pointer onwards, search from beginning
+    if (algorithm === "Next Fit" && blockIndex === -1) {
+      for (let i = 0; i < nextFitPointer; i++) {
+        const block = memoryBlocks[i];
+        if (!block.isAllocated && block.size >= size) {
+          blockIndex = i;
+          setNextFitPointer(i);
+          break;
+        }
+      }
+    }
+
+    // Set the final block index based on algorithm
+    if (algorithm === "Best Fit") blockIndex = bestFitIndex;
+    if (algorithm === "Worst Fit") blockIndex = worstFitIndex;
+
+    if (blockIndex === -1) {
+      alert("No suitable memory block found");
+      return false;
+    }
+
+    const selectedBlock = memoryBlocks[blockIndex];
+    const newBlocks = [...memoryBlocks];
+
+    if (selectedBlock.size === size) {
+      // Exact fit
+      newBlocks[blockIndex] = {
+        ...selectedBlock,
+        isAllocated: true,
+        processId,
+        color,
+      };
+    } else {
+      // Split the block
+      const allocatedBlock: MemoryBlock = {
+        id: `${processId}-${Date.now()}`,
+        size,
+        isAllocated: true,
+        processId,
+        color,
+        startAddress: selectedBlock.startAddress,
+        endAddress: selectedBlock.startAddress + size - 1,
+      };
+
+      const remainingBlock: MemoryBlock = {
+        id: `free-${Date.now()}`,
+        size: selectedBlock.size - size,
+        isAllocated: false,
+        startAddress: selectedBlock.startAddress + size,
+        endAddress: selectedBlock.endAddress,
+      };
+
+      newBlocks.splice(blockIndex, 1, allocatedBlock, remainingBlock);
+    }
+
+    setMemoryBlocks(newBlocks);
+    setAllocatedProcesses((prev) => [...prev, { processId, size, color }]);
+    return true;
+  };
+
+  const deallocateMemory = (processId: string) => {
+    const newBlocks = memoryBlocks.map((block) =>
+      block.processId === processId
+        ? {
+            ...block,
+            isAllocated: false,
+            processId: undefined,
+            color: undefined,
+          }
+        : block
+    );
+
+    // Merge adjacent free blocks
+    const mergedBlocks: MemoryBlock[] = [];
+    for (let i = 0; i < newBlocks.length; i++) {
+      const currentBlock = newBlocks[i];
+
+      if (
+        !currentBlock.isAllocated &&
+        mergedBlocks.length > 0 &&
+        !mergedBlocks[mergedBlocks.length - 1].isAllocated &&
+        mergedBlocks[mergedBlocks.length - 1].endAddress + 1 ===
+          currentBlock.startAddress
+      ) {
+        // Merge with previous block
+        const lastBlock = mergedBlocks[mergedBlocks.length - 1];
+        lastBlock.size += currentBlock.size;
+        lastBlock.endAddress = currentBlock.endAddress;
+      } else {
+        mergedBlocks.push(currentBlock);
+      }
+    }
+
+    setMemoryBlocks(mergedBlocks);
+    setAllocatedProcesses((prev) =>
+      prev.filter((p) => p.processId !== processId)
+    );
+  };
+
+  const resetMemoryPlacement = () => {
+    initializeMemory();
+    setPlacementAlgorithm("");
+  };
+
+  const simulatePlacementAlgorithm = (algorithm: string) => {
+    setPlacementAlgorithm(algorithm);
+    initializeMemory();
+  };
+
+  // Initialize memory on component mount
+  useEffect(() => {
+    initializeMemory();
+  }, [totalMemorySize]);
+
   useEffect(() => {
     simulationProcesses.forEach((process) => {
       if (
@@ -2423,6 +2792,13 @@ const Marked: FC = () => {
           onClick={() => setActiveTab("replacement")}
         >
           Replacement Algorithms
+        </Tab>
+        <Tab
+          isActive={activeTab === "placement"}
+          isDarkMode={isDarkMode}
+          onClick={() => setActiveTab("placement")}
+        >
+          Placement Algorithms
         </Tab>
       </TabContainer>
 
@@ -2874,6 +3250,231 @@ const Marked: FC = () => {
                 ))}
               </TimelineBody>
             </TimelineContainer>
+          </AlgorithmContainer>
+        )}
+      </TabContent>
+
+      <TabContent isVisible={activeTab === "placement"}>
+        <AlgorithmContainer isDarkMode={isDarkMode}>
+          <AlgorithmTitle isDarkMode={isDarkMode}>
+            Memory Placement Algorithms
+          </AlgorithmTitle>
+          <StyledSelector>
+            <Button
+              disabled={false}
+              isDarkMode={isDarkMode}
+              onClick={() => simulatePlacementAlgorithm("First Fit")}
+            >
+              First Fit
+            </Button>
+            <Button
+              disabled={false}
+              isDarkMode={isDarkMode}
+              onClick={() => simulatePlacementAlgorithm("Best Fit")}
+            >
+              Best Fit
+            </Button>
+            <Button
+              disabled={false}
+              isDarkMode={isDarkMode}
+              onClick={() => simulatePlacementAlgorithm("Worst Fit")}
+            >
+              Worst Fit
+            </Button>
+            <Button
+              disabled={false}
+              isDarkMode={isDarkMode}
+              onClick={() => simulatePlacementAlgorithm("Next Fit")}
+            >
+              Next Fit
+            </Button>
+          </StyledSelector>
+        </AlgorithmContainer>
+
+        <AlgorithmContainer isDarkMode={isDarkMode}>
+          <AlgorithmTitle isDarkMode={isDarkMode}>
+            Memory Configuration
+          </AlgorithmTitle>
+          <ConfigContainer>
+            <ConfigSection>
+              <ConfigLabel isDarkMode={isDarkMode}>
+                Total Memory Size (KB):
+              </ConfigLabel>
+              <FrameInput
+                isDarkMode={isDarkMode}
+                type="number"
+                min="256"
+                max="4096"
+                value={totalMemorySize}
+                onChange={(e) =>
+                  setTotalMemorySize(parseInt(e.target.value) || 1024)
+                }
+              />
+            </ConfigSection>
+            <ActionButtonsContainer>
+              <Button
+                disabled={false}
+                isDarkMode={isDarkMode}
+                onClick={resetMemoryPlacement}
+              >
+                Reset Memory
+              </Button>
+            </ActionButtonsContainer>
+          </ConfigContainer>
+        </AlgorithmContainer>
+
+        {placementAlgorithm && (
+          <AlgorithmContainer isDarkMode={isDarkMode}>
+            <AlgorithmTitle isDarkMode={isDarkMode}>
+              Allocate Memory - {placementAlgorithm}
+            </AlgorithmTitle>
+            <AllocationForm isDarkMode={isDarkMode}>
+              <div>
+                <ConfigLabel isDarkMode={isDarkMode}>Process ID:</ConfigLabel>
+                <AllocationInput
+                  isDarkMode={isDarkMode}
+                  type="text"
+                  placeholder="e.g., P1"
+                  id="processId"
+                />
+              </div>
+              <div>
+                <ConfigLabel isDarkMode={isDarkMode}>Size (KB):</ConfigLabel>
+                <AllocationInput
+                  isDarkMode={isDarkMode}
+                  type="number"
+                  placeholder="e.g., 100"
+                  id="processSize"
+                />
+              </div>
+              <div></div>
+              <Button
+                disabled={false}
+                isDarkMode={isDarkMode}
+                onClick={() => {
+                  const processIdInput = document.getElementById(
+                    "processId"
+                  ) as HTMLInputElement;
+                  const processSizeInput = document.getElementById(
+                    "processSize"
+                  ) as HTMLInputElement;
+
+                  if (processIdInput && processSizeInput) {
+                    const processId = processIdInput.value.trim();
+                    const size = parseInt(processSizeInput.value);
+
+                    if (processId && size > 0) {
+                      const success = allocateMemory(
+                        processId,
+                        size,
+                        placementAlgorithm
+                      );
+                      if (success) {
+                        processIdInput.value = "";
+                        processSizeInput.value = "";
+                      }
+                    } else {
+                      alert("Please enter valid process ID and size");
+                    }
+                  }
+                }}
+              >
+                Allocate
+              </Button>
+            </AllocationForm>
+          </AlgorithmContainer>
+        )}
+
+        {memoryBlocks.length > 0 && (
+          <AlgorithmContainer isDarkMode={isDarkMode}>
+            <AlgorithmTitle isDarkMode={isDarkMode}>
+              Memory Visualization
+            </AlgorithmTitle>
+            <AllocationStats isDarkMode={isDarkMode}>
+              <StatItem>
+                <StatLabel>Total Memory:</StatLabel>
+                <StatValue>{totalMemorySize} KB</StatValue>
+              </StatItem>
+              <StatItem>
+                <StatLabel>Allocated:</StatLabel>
+                <StatValue>
+                  {memoryBlocks
+                    .filter((block) => block.isAllocated)
+                    .reduce((sum, block) => sum + block.size, 0)}{" "}
+                  KB
+                </StatValue>
+              </StatItem>
+              <StatItem>
+                <StatLabel>Free:</StatLabel>
+                <StatValue>
+                  {memoryBlocks
+                    .filter((block) => !block.isAllocated)
+                    .reduce((sum, block) => sum + block.size, 0)}{" "}
+                  KB
+                </StatValue>
+              </StatItem>
+              <StatItem>
+                <StatLabel>Fragmentation:</StatLabel>
+                <StatValue>
+                  {(
+                    ((memoryBlocks.filter((block) => !block.isAllocated)
+                      .length -
+                      1) /
+                      memoryBlocks.length) *
+                    100
+                  ).toFixed(1)}
+                  %
+                </StatValue>
+              </StatItem>
+            </AllocationStats>
+
+            <MemoryVisualization isDarkMode={isDarkMode}>
+              {memoryBlocks.map((block, index) => (
+                <MemoryBlockDiv
+                  key={block.id}
+                  color={block.color}
+                  isAllocated={block.isAllocated}
+                  isDarkMode={isDarkMode}
+                  height={Math.max(20, (block.size / totalMemorySize) * 250)}
+                  title={`${block.isAllocated ? block.processId : "Free"} - ${
+                    block.size
+                  } KB (${block.startAddress}-${block.endAddress})`}
+                >
+                  {block.isAllocated
+                    ? `${block.processId} (${block.size}KB)`
+                    : `Free (${block.size}KB)`}
+                </MemoryBlockDiv>
+              ))}
+            </MemoryVisualization>
+          </AlgorithmContainer>
+        )}
+
+        {allocatedProcesses.length > 0 && (
+          <AlgorithmContainer isDarkMode={isDarkMode}>
+            <AlgorithmTitle isDarkMode={isDarkMode}>
+              Allocated Processes
+            </AlgorithmTitle>
+            <ProcessList isDarkMode={isDarkMode}>
+              {allocatedProcesses.map((process, index) => (
+                <ProcessItem
+                  key={index}
+                  isDarkMode={isDarkMode}
+                  color={process.color}
+                >
+                  <ProcessInfo>
+                    <ProcessColorIndicator color={process.color} />
+                    <span>{process.processId}</span>
+                    <span>({process.size} KB)</span>
+                  </ProcessInfo>
+                  <DeallocateButton
+                    isDarkMode={isDarkMode}
+                    onClick={() => deallocateMemory(process.processId)}
+                  >
+                    Deallocate
+                  </DeallocateButton>
+                </ProcessItem>
+              ))}
+            </ProcessList>
           </AlgorithmContainer>
         )}
       </TabContent>
