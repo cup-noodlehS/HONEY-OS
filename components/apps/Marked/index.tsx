@@ -2851,7 +2851,22 @@ const Marked: FC = () => {
             <Button
               disabled={isSimulating}
               isDarkMode={isDarkMode}
-              onClick={() => simulateRoundRobin()}
+              onClick={() => {
+                const quantum = prompt(
+                  "Enter time quantum for Round Robin scheduling:",
+                  "4"
+                );
+                if (quantum !== null) {
+                  const quantumValue = parseInt(quantum);
+                  if (quantumValue > 0) {
+                    simulateRoundRobin(quantumValue);
+                  } else {
+                    alert(
+                      "Please enter a valid positive number for the time quantum."
+                    );
+                  }
+                }
+              }}
             >
               Round Robin
             </Button>
